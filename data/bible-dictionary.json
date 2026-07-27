@@ -1,0 +1,11 @@
+{
+  "id": "bd",
+  "name": "Bible Dictionary",
+  "books": [
+    { "id": "topics", "name": "Topics", "chapters": [
+      { "num": 1, "title": "Aaron", "verses": [] },
+      { "num": 2, "title": "Abomination of Desolation", "verses": [] },
+      { "num": 3, "title": "Atonement", "verses": [] }
+    ]}
+  ]
+}

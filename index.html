@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="A scripture study companion for Meta Ray-Ban Display glasses">
+<meta name="mrbd-web-app-capable" content="yes">
+<meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=">
+<title>Bookshelf</title>
+<style>
+  :root {
+    --bg: #000000;
+    --ink: #F5EFE6;
+    --ink-dim: #948B7C;
+    --gold: #D4AF37;
+    --gold-dim: #6B5B2A;
+    --glow: rgba(212, 175, 55, 0.45);
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 600px; height: 600px;
+    background: var(--bg); color: var(--ink);
+    overflow: hidden; font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { position: relative; width: 600px; height: 600px; }
+  .screen {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+    padding: 28px 24px 20px;
+    opacity: 0; transition: opacity 220ms ease;
+  }
+  .screen.active { display: flex; opacity: 1; }
+
+  /* --- Header --- */
+  .eyebrow {
+    font-family: var(--sans); font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
+  }
+  .title {
+    font-family: var(--serif); font-size: 28px; color: var(--ink);
+    margin-bottom: 18px; font-weight: 400;
+  }
+
+  /* --- Boot / loading --- */
+  #boot { justify-content: center; align-items: center; text-align: center; gap: 10px; }
+  #boot .mark { font-family: var(--serif); font-size: 22px; color: var(--gold); letter-spacing: 1px; }
+  #boot .sub { font-size: 12px; color: var(--ink-dim); }
+  #boot .error { color: #C1483C; font-size: 13px; max-width: 440px; margin-top: 6px; }
+
+  /* --- Focusable list rows (Home / Library / Books / Chapters) --- */
+  .list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+  .row {
+    min-height: 68px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+    border: 2px solid transparent; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    transition: all 150ms ease; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .row .label { font-family: var(--serif); font-size: 19px; color: var(--ink); }
+  .row .sub { font-family: var(--sans); font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .row .chev { color: var(--gold-dim); font-size: 18px; }
+  .row:focus {
+    outline: none; border-color: var(--gold);
+    box-shadow: 0 0 18px var(--glow);
+    background: rgba(212,175,55,0.08);
+  }
+  .row:focus .chev { color: var(--gold); }
+  .row.empty { opacity: 0.45; }
+
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; flex: 1; align-content: flex-start; }
+  .grid.list-mode { flex-wrap: nowrap; flex-direction: column; }
+  .grid.list-mode .row { width: 100%; }
+  .chip {
+    width: 62px; height: 62px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 18px;
+    border: 2px solid transparent; border-radius: 10px;
+    background: rgba(255,255,255,0.03); color: var(--ink);
+  }
+  .chip:focus {
+    outline: none; border-color: var(--gold);
+    box-shadow: 0 0 18px var(--glow); background: rgba(212,175,55,0.08);
+  }
+
+  /* --- Reader --- */
+  #reader { justify-content: center; align-items: center; text-align: center; padding: 40px 46px; }
+  .ref-tag {
+    position: absolute; top: 22px; left: 26px;
+    font-family: var(--sans); font-size: 13px; letter-spacing: 1.5px;
+    color: var(--gold); text-transform: uppercase;
+  }
+  #readerBody { transition: opacity 160ms ease, transform 160ms ease; }
+  #readerBody.turning { opacity: 0; transform: translateY(6px); }
+  .verse-text {
+    font-family: var(--serif); font-size: 24px; line-height: 1.55;
+    color: var(--ink);
+  }
+  .verse-marker {
+    font-family: var(--sans); font-size: 14px; vertical-align: super;
+    color: var(--gold); margin-right: 6px;
+  }
+  .progress-rail {
+    position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px;
+  }
+  .progress-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+  .progress-dot.on { background: var(--gold); box-shadow: 0 0 6px var(--glow); }
+  .bookmark-flag {
+    position: absolute; top: 20px; right: 26px; font-size: 20px; color: var(--gold-dim);
+  }
+  .bookmark-flag.on { color: var(--gold); }
+  .hint {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--ink-dim); letter-spacing: 1px;
+  }
+
+  /* --- Menu overlay --- */
+  #menu {
+    position: absolute; inset: 0; display: none;
+    background: rgba(0,0,0,0.92);
+    flex-direction: column; justify-content: center; align-items: stretch;
+    padding: 0 60px; gap: 12px;
+  }
+  #menu.active { display: flex; }
+  .menu-btn {
+    min-height: 60px; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; border: 2px solid transparent; border-radius: 10px;
+    font-family: var(--sans); font-size: 16px; color: var(--ink);
+    background: rgba(255,255,255,0.04);
+  }
+  .menu-btn:focus {
+    outline: none; border-color: var(--gold); box-shadow: 0 0 18px var(--glow);
+    background: rgba(212,175,55,0.08);
+  }
+  .menu-icon { font-size: 18px; width: 22px; text-align: center; color: var(--gold); }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; color: var(--ink-dim); }
+  .empty-state .big { font-size: 30px; color: var(--gold-dim); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- BOOT -->
+  <section class="screen active" id="boot">
+    <div class="mark">Bookshelf</div>
+    <div class="sub" id="bootStatus">Loading library…</div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <div class="eyebrow">Bookshelf</div>
+    <div class="title">Good to see you</div>
+    <div class="list" id="homeList"></div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="screen" id="library">
+    <div class="eyebrow">Library</div>
+    <div class="title">Standard Works</div>
+    <div class="list" id="libraryList"></div>
+  </section>
+
+  <!-- BOOKS -->
+  <section class="screen" id="books">
+    <div class="eyebrow" id="booksVolumeName">Volume</div>
+    <div class="title" id="booksTitle">Books</div>
+    <div class="list" id="booksList"></div>
+  </section>
+
+  <!-- CHAPTERS -->
+  <section class="screen" id="chapters">
+    <div class="eyebrow" id="chaptersBookName">Book</div>
+    <div class="title">Chapters</div>
+    <div class="grid" id="chaptersGrid"></div>
+  </section>
+
+  <!-- READER -->
+  <section class="screen" id="reader">
+    <div class="ref-tag" id="refTag">—</div>
+    <div class="bookmark-flag" id="bookmarkFlag">★</div>
+    <div id="readerBody">
+      <div class="verse-text" id="verseText"></div>
+    </div>
+    <div class="progress-rail" id="progressRail"></div>
+    <div class="hint">ENTER · MENU</div>
+  </section>
+
+  <!-- MENU OVERLAY -->
+  <div id="menu">
+    <button class="menu-btn focusable" data-action="resume"><span class="menu-icon">▸</span>Resume reading</button>
+    <button class="menu-btn focusable" data-action="bookmark"><span class="menu-icon">★</span><span id="bookmarkLabel">Bookmark this verse</span></button>
+    <button class="menu-btn focusable" data-action="chapters"><span class="menu-icon">≡</span>Jump to chapter</button>
+    <button class="menu-btn focusable" data-action="home"><span class="menu-icon">⌂</span>Back to Home</button>
+  </div>
+
+</div>
+
+<script>
+/* ============ DATA LOADING (plug-and-play) ============
+   All content lives in data/*.json. To add a brand new volume:
+     1. Create data/your-book.json using the same shape as the others.
+     2. Add its filename to data/manifest.json.
+   Nothing in this file needs to change. See README.md for the schema. */
+const SCRIPTURES = { volumes: [] };
+
+async function loadLibrary(){
+  const statusEl = document.getElementById('bootStatus');
+  try {
+    const manifestRes = await fetch('data/manifest.json');
+    if (!manifestRes.ok) throw new Error('manifest.json not found (' + manifestRes.status + ')');
+    const files = await manifestRes.json();
+
+    for (const file of files){
+      statusEl.textContent = 'Loading ' + file + '…';
+      const res = await fetch('data/' + file);
+      if (!res.ok) { console.warn('Skipping ' + file + ': ' + res.status); continue; }
+      const volume = await res.json();
+      SCRIPTURES.volumes.push(volume);
+    }
+    renderHome();
+    renderLibrary();
+    showScreen('home');
+  } catch(err){
+    statusEl.textContent = '';
+    const bootScreen = document.getElementById('boot');
+    const errEl = document.createElement('div');
+    errEl.className = 'error';
+    errEl.textContent = 'Could not load the library (' + err.message + '). If you are opening this file directly, serve it over http(s) instead — see README.md.';
+    bootScreen.appendChild(errEl);
+  }
+}
+
+function getVolume(id){ return SCRIPTURES.volumes.find(v => v.id === id); }
+function getBook(vId, bId){ return getVolume(vId).books.find(b => b.id === bId); }
+function getChapter(vId, bId, num){ return getBook(vId, bId).chapters.find(c => c.num === num); }
+
+/* A verse entry can be a plain string, or {text} (object form kept for
+   forward compatibility with data files, e.g. future per-verse metadata) */
+function verseText(v){ return (typeof v === 'string') ? v : v.text; }
+
+/* ============ STATE ============ */
+let nav = { volumeId: null, bookId: null, chapterNum: null, verseIdx: 0 };
+let menuOpen = false;
+
+/* ============ PERSISTENCE ============ */
+function loadJSON(key, fallback){
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+function saveJSON(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+
+function recents(){ return loadJSON('gl_recents', []).filter(entryStillValid); }
+function bookmarks(){ return loadJSON('gl_bookmarks', []).filter(entryStillValid); }
+function entryStillValid(entry){
+  const vol = getVolume(entry.volumeId);
+  if (!vol) return false;
+  const book = getBook(entry.volumeId, entry.bookId);
+  if (!book) return false;
+  return !!book.chapters.find(c => c.num === entry.chapterNum);
+}
+
+function verseKey(v, b, c, i){ return v + '|' + b + '|' + c + '|' + i; }
+
+function touchRecent(){
+  const vol = getVolume(nav.volumeId), book = getBook(nav.volumeId, nav.bookId);
+  const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  const label = chapter.title ? chapter.title : (book.name + ' ' + nav.chapterNum);
+  let list = recents().filter(r => !(r.volumeId===nav.volumeId && r.bookId===nav.bookId && r.chapterNum===nav.chapterNum));
+  list.unshift({ volumeId: nav.volumeId, bookId: nav.bookId, chapterNum: nav.chapterNum, verseIdx: nav.verseIdx, label: label, volumeName: vol.name, ts: Date.now() });
+  saveJSON('gl_recents', list.slice(0, 6));
+}
+
+function isBookmarked(){
+  return bookmarks().some(b => b.key === verseKey(nav.volumeId, nav.bookId, nav.chapterNum, nav.verseIdx));
+}
+
+function toggleBookmark(){
+  const key = verseKey(nav.volumeId, nav.bookId, nav.chapterNum, nav.verseIdx);
+  let list = bookmarks();
+  const idx = list.findIndex(b => b.key === key);
+  const book = getBook(nav.volumeId, nav.bookId);
+  const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  const label = (chapter.title ? chapter.title : (book.name + ' ' + nav.chapterNum)) + ' : ' + (nav.verseIdx + 1);
+  if (idx >= 0) { list.splice(idx, 1); }
+  else {
+    list.unshift({ key, volumeId: nav.volumeId, bookId: nav.bookId, chapterNum: nav.chapterNum, verseIdx: nav.verseIdx, label, ts: Date.now() });
+  }
+  saveJSON('gl_bookmarks', list.slice(0, 12));
+  renderBookmarkFlag();
+}
+
+/* ============ SCREEN ROUTER ============ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  focusFirst(id);
+}
+function focusFirst(screenId){
+  const scope = document.getElementById(screenId);
+  const first = scope.querySelector('.focusable');
+  if (first) first.focus();
+}
+
+/* ============ ROW BUILDER ============ */
+function makeRow({label, sub, onSelect, empty}){
+  const row = document.createElement('div');
+  row.className = 'row focusable' + (empty ? ' empty' : '');
+  row.tabIndex = 0;
+  row.innerHTML = `<div><div class="label">${label}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div><div class="chev">›</div>`;
+  row.addEventListener('click', onSelect);
+  return row;
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const list = document.getElementById('homeList');
+  list.innerHTML = '';
+  list.appendChild(makeRow({ label: 'Browse Library', sub: SCRIPTURES.volumes.map(v => v.name).join(' · '),
+    onSelect: () => showScreen('library') }));
+
+  const rec = recents();
+  if (rec.length){
+    rec.forEach(r => {
+      list.appendChild(makeRow({
+        label: r.label, sub: r.volumeName,
+        onSelect: () => { nav = { volumeId: r.volumeId, bookId: r.bookId, chapterNum: r.chapterNum, verseIdx: r.verseIdx }; openReader(); }
+      }));
+    });
+  } else {
+    const note = document.createElement('div');
+    note.className = 'sub'; note.style.padding = '4px 6px 0';
+    note.textContent = 'Chapters you open will show up here.';
+    list.appendChild(note);
+  }
+  const bm = bookmarks();
+  if (bm.length){
+    bm.forEach(b => {
+      list.appendChild(makeRow({
+        label: '★ ' + b.label, sub: 'Bookmarked',
+        onSelect: () => { nav = { volumeId: b.volumeId, bookId: b.bookId, chapterNum: b.chapterNum, verseIdx: b.verseIdx }; openReader(); }
+      }));
+    });
+  }
+}
+
+/* ============ LIBRARY ============ */
+function renderLibrary(){
+  const list = document.getElementById('libraryList');
+  list.innerHTML = '';
+  SCRIPTURES.volumes.forEach(v => {
+    list.appendChild(makeRow({
+      label: v.name, sub: v.books.length + (v.books.length === 1 ? ' book' : ' books'),
+      empty: v.books.length === 0,
+      onSelect: () => { if (v.books.length === 0) return; nav.volumeId = v.id; renderBooks(); showScreen('books'); }
+    }));
+  });
+}
+
+/* ============ BOOKS ============ */
+function renderBooks(){
+  const vol = getVolume(nav.volumeId);
+  document.getElementById('booksVolumeName').textContent = vol.name;
+  document.getElementById('booksTitle').textContent = 'Books';
+  const list = document.getElementById('booksList');
+  list.innerHTML = '';
+  vol.books.forEach(b => {
+    list.appendChild(makeRow({
+      label: b.name, sub: b.chapters.length + (b.chapters.length === 1 ? ' chapter' : ' chapters'),
+      onSelect: () => { nav.bookId = b.id; renderChapters(); showScreen('chapters'); }
+    }));
+  });
+}
+
+/* ============ CHAPTERS ============ */
+function renderChapters(){
+  const book = getBook(nav.volumeId, nav.bookId);
+  document.getElementById('chaptersBookName').textContent = book.name;
+  const grid = document.getElementById('chaptersGrid');
+  grid.innerHTML = '';
+  const hasTitles = book.chapters.some(c => c.title);
+  grid.classList.toggle('list-mode', hasTitles);
+  book.chapters.forEach(c => {
+    const chip = document.createElement('div');
+    chip.className = (hasTitles ? 'row' : 'chip') + ' focusable' + (c.verses.length === 0 ? ' empty' : '');
+    chip.tabIndex = 0;
+    if (hasTitles) {
+      chip.innerHTML = `<div><div class="label">${c.title}</div></div><div class="chev">›</div>`;
+    } else {
+      chip.textContent = c.num;
+    }
+    chip.addEventListener('click', () => {
+      nav.chapterNum = c.num; nav.verseIdx = 0;
+      openReader();
+    });
+    grid.appendChild(chip);
+  });
+}
+
+/* ============ READER ============ */
+function openReader(){
+  showScreen('reader');
+  renderVerse(false);
+}
+function renderVerse(animate){
+  const book = getBook(nav.volumeId, nav.bookId);
+  const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  document.getElementById('refTag').textContent = chapter.title ? chapter.title : (book.name + ' ' + nav.chapterNum);
+  const body = document.getElementById('readerBody');
+
+  function paint(){
+    if (!chapter.verses.length){
+      body.innerHTML = '<div class="empty-state"><div class="big">✎</div><div>No text loaded for this chapter yet.<br>Add it to the data file to read here.</div></div>';
+      document.getElementById('progressRail').innerHTML = '';
+      document.getElementById('bookmarkFlag').classList.remove('on');
+      return;
+    }
+    const v = chapter.verses[nav.verseIdx];
+    const text = verseText(v);
+    body.innerHTML = `<div class="verse-text"><span class="verse-marker">${nav.verseIdx + 1}</span>${text}</div>`;
+
+    const rail = document.getElementById('progressRail');
+    rail.innerHTML = '';
+    chapter.verses.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot' + (i === nav.verseIdx ? ' on' : '');
+      rail.appendChild(dot);
+    });
+    renderBookmarkFlag();
+    touchRecent();
+  }
+
+  if (animate){
+    body.classList.add('turning');
+    setTimeout(() => { paint(); body.classList.remove('turning'); }, 140);
+  } else {
+    paint();
+  }
+}
+function renderBookmarkFlag(){
+  document.getElementById('bookmarkFlag').classList.toggle('on', isBookmarked());
+  document.getElementById('bookmarkLabel').textContent = isBookmarked() ? 'Remove bookmark' : 'Bookmark this verse';
+}
+
+function stepVerse(delta){
+  const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  if (!chapter.verses.length) return;
+  const n = chapter.verses.length;
+  nav.verseIdx = (nav.verseIdx + delta + n) % n;
+  renderVerse(true);
+}
+function stepChapter(delta){
+  const book = getBook(nav.volumeId, nav.bookId);
+  const idx = book.chapters.findIndex(c => c.num === nav.chapterNum);
+  const n = book.chapters.length;
+  const next = (idx + delta + n) % n;
+  nav.chapterNum = book.chapters[next].num;
+  nav.verseIdx = 0;
+  renderVerse(true);
+}
+
+/* ============ MENU ============ */
+function openMenu(){
+  menuOpen = true;
+  const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  const bookmarkBtn = document.querySelector('.menu-btn[data-action="bookmark"]');
+  bookmarkBtn.classList.toggle('hidden', chapter.verses.length === 0);
+  bookmarkBtn.style.display = chapter.verses.length === 0 ? 'none' : 'flex';
+  document.getElementById('menu').classList.add('active');
+  document.querySelector('#menu .focusable:not(.hidden)').focus();
+}
+function closeMenu(){
+  menuOpen = false;
+  document.getElementById('menu').classList.remove('active');
+}
+document.querySelectorAll('#menu .menu-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    if (action === 'resume') closeMenu();
+    else if (action === 'bookmark') { toggleBookmark(); closeMenu(); }
+    else if (action === 'chapters') { closeMenu(); renderChapters(); showScreen('chapters'); }
+    else if (action === 'home') { closeMenu(); renderHome(); showScreen('home'); }
+  });
+});
+
+/* ============ FOCUS-LIST NAVIGATION (Home / Library / Books / Chapters / Menu) ============ */
+function activeScope(){
+  if (menuOpen) return document.getElementById('menu');
+  return document.querySelector('.screen.active');
+}
+function moveFocus(direction){
+  const scope = activeScope();
+  const focusables = Array.from(scope.querySelectorAll('.focusable:not(.hidden)'));
+  if (!focusables.length) return;
+  const idx = focusables.indexOf(document.activeElement);
+  if (idx === -1) { focusables[0].focus(); return; }
+  const next = (direction === 'up' || direction === 'left')
+    ? (idx > 0 ? idx - 1 : focusables.length - 1)
+    : (idx < focusables.length - 1 ? idx + 1 : 0);
+  focusables[next].focus();
+  focusables[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+const DPAD = { UP:'ArrowUp', DOWN:'ArrowDown', LEFT:'ArrowLeft', RIGHT:'ArrowRight', SELECT:'Enter' };
+
+document.addEventListener('keydown', function(e){
+  const onReaderScreen = document.getElementById('reader').classList.contains('active');
+
+  if (onReaderScreen && !menuOpen){
+    switch(e.key){
+      case DPAD.UP:    stepVerse(-1); break;
+      case DPAD.DOWN:  stepVerse(1);  break;
+      case DPAD.LEFT:  stepChapter(-1); break;
+      case DPAD.RIGHT: stepChapter(1);  break;
+      case DPAD.SELECT: openMenu(); break;
+      default: return;
+    }
+    e.preventDefault();
+    return;
+  }
+
+  switch(e.key){
+    case DPAD.UP:    moveFocus('up');    break;
+    case DPAD.DOWN:  moveFocus('down');  break;
+    case DPAD.LEFT:  moveFocus('left');  break;
+    case DPAD.RIGHT: moveFocus('right'); break;
+    case DPAD.SELECT:
+      if (document.activeElement.classList.contains('focusable')) document.activeElement.click();
+      break;
+    default: return;
+  }
+  e.preventDefault();
+});
+
+/* ============ INIT ============ */
+loadLibrary();
+</script>
+</body>
+</html>

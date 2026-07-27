@@ -1,0 +1,11 @@
+{
+  "id": "gts",
+  "name": "Guide to the Scriptures",
+  "books": [
+    { "id": "topics", "name": "Topics", "chapters": [
+      { "num": 1, "title": "Agency", "verses": [] },
+      { "num": 2, "title": "Covenant", "verses": [] },
+      { "num": 3, "title": "Faith", "verses": [] }
+    ]}
+  ]
+}
