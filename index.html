@@ -15,69 +15,60 @@
 <style>
 /* ── Themes ── */
 :root {
-  --bg:             #000000;
-  --card:           rgba(255,255,255,0.06);
-  --card-hi:        rgba(79,168,232,0.14);
-  --ink:            #F2F2F7;
-  --ink-dim:        rgba(242,242,247,0.42);
-  --accent:         #4FA8E8;
-  --accent-border:  rgba(79,168,232,0.65);
-  --divider:        rgba(255,255,255,0.08);
-  --scrim:          rgba(0,0,0,0.88);
-  --font:           'Noto Serif', Georgia, serif;
-  --ease:           cubic-bezier(0.4,0,0.2,1);
+  --bg:            #000;
+  --card:          rgba(255,255,255,0.06);
+  --card-hi:       rgba(79,168,232,0.14);
+  --ink:           #F2F2F7;
+  --ink-dim:       rgba(242,242,247,0.42);
+  --accent:        #4FA8E8;
+  --accent-border: rgba(79,168,232,0.65);
+  --divider:       rgba(255,255,255,0.08);
+  --scrim:         rgba(0,0,0,0.88);
+  --font:          'Noto Serif', Georgia, serif;
+  --ease:          cubic-bezier(0.4,0,0.2,1);
 }
 [data-theme="light"] {
-  --bg:             #F0EAE0;
-  --card:           rgba(255,255,255,0.72);
-  --card-hi:        rgba(0,74,148,0.10);
-  --ink:            #1A1208;
-  --ink-dim:        rgba(26,18,8,0.48);
-  --accent:         #004A94;
-  --accent-border:  rgba(0,74,148,0.55);
-  --divider:        rgba(0,0,0,0.09);
-  --scrim:          rgba(240,234,224,0.92);
+  --bg:            #F0EAE0;
+  --card:          rgba(255,255,255,0.72);
+  --card-hi:       rgba(0,74,148,0.10);
+  --ink:           #1A1208;
+  --ink-dim:       rgba(26,18,8,0.48);
+  --accent:        #004A94;
+  --accent-border: rgba(0,74,148,0.55);
+  --divider:       rgba(0,0,0,0.09);
+  --scrim:         rgba(240,234,224,0.92);
 }
 
 /* ── Base ── */
 *,::before,::after { box-sizing:border-box; margin:0; padding:0; }
-html,body {
+html, body {
   width:600px; height:600px;
   background:var(--bg); color:var(--ink);
   overflow:hidden; font-family:var(--font);
   -webkit-font-smoothing:antialiased;
-  transition: background 320ms var(--ease), color 320ms var(--ease);
+  transition:background 300ms var(--ease), color 300ms var(--ease);
 }
 #app { position:relative; width:600px; height:600px; }
 
-/* ── Screen transitions (visibility lets transform animate) ── */
+/* ── Screen transitions ── */
 .screen {
   position:absolute; inset:0;
   display:flex; flex-direction:column;
-  padding:28px 22px 16px;
+  padding:32px 22px 18px;
   opacity:0; visibility:hidden; pointer-events:none;
   transform:translateY(12px);
-  transition:
-    opacity   260ms var(--ease),
-    transform 260ms var(--ease),
-    visibility 0s   260ms;
+  transition:opacity 250ms var(--ease), transform 250ms var(--ease), visibility 0s 250ms;
 }
 .screen.active {
   opacity:1; visibility:visible; pointer-events:auto;
   transform:translateY(0);
-  transition:
-    opacity   260ms var(--ease),
-    transform 260ms var(--ease),
-    visibility 0s 0s;
+  transition:opacity 250ms var(--ease), transform 250ms var(--ease), visibility 0s 0s;
 }
 
 /* ── Boot ── */
 #boot { justify-content:center; align-items:center; gap:20px; }
 .spinner { position:relative; width:52px; height:52px; }
-.spinner-track {
-  position:absolute; inset:0; border-radius:50%;
-  border:2.5px solid rgba(79,168,232,0.14);
-}
+.spinner-track { position:absolute; inset:0; border-radius:50%; border:2.5px solid rgba(79,168,232,0.14); }
 @keyframes arc-spin { to { transform:rotate(360deg); } }
 .spinner-arc {
   position:absolute; inset:0; border-radius:50%;
@@ -86,137 +77,82 @@ html,body {
   border-right-color:rgba(79,168,232,0.32);
   animation:arc-spin 0.88s cubic-bezier(0.4,0,0.2,1) infinite;
 }
-.boot-wordmark { font-size:21px; font-weight:600; color:var(--ink); letter-spacing:-0.3px; }
+.boot-wordmark { font-size:21px; font-weight:600; color:var(--ink); }
 .boot-status   { font-size:13px; color:var(--ink-dim); }
 .boot-error    { font-size:13px; color:#FF6B6B; max-width:440px; text-align:center; }
 
-/* ── Shared header ── */
+/* ── Screen header ── */
 .eyebrow {
   font-size:10px; letter-spacing:2px; text-transform:uppercase;
-  color:var(--ink-dim); margin-bottom:4px; flex-shrink:0;
+  color:var(--ink-dim); margin-bottom:5px; flex-shrink:0;
 }
 .screen-title {
-  font-size:26px; font-weight:600; letter-spacing:-0.4px; line-height:1.1;
-  color:var(--ink); margin-bottom:18px; flex-shrink:0;
+  font-size:27px; font-weight:600; letter-spacing:-0.4px; line-height:1.1;
+  color:var(--ink); margin-bottom:20px; flex-shrink:0;
 }
 
-/* ── Card rows (Books, Chapters list-mode, Recents) ── */
+/* ── Card rows ── */
 .card-list {
-  flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+  flex:1; overflow-y:auto;
+  display:flex; flex-direction:column; gap:8px;
 }
 .card-list::-webkit-scrollbar { display:none; }
 
 .card-row {
   min-height:64px; flex-shrink:0;
   display:flex; align-items:center; justify-content:space-between;
-  padding:13px 16px 13px 18px;
+  padding:14px 18px;
   background:var(--card);
   border-radius:14px;
   border:1.5px solid transparent;
   cursor:pointer;
   transition:background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
 }
-.card-row .label { font-size:17px; font-weight:400; color:var(--ink); line-height:1.3; }
+.card-row .label { font-size:17px; color:var(--ink); line-height:1.3; }
+.card-row .sub   { font-size:12px; color:var(--ink-dim); margin-top:3px; }
 .card-row .chev  { font-size:19px; color:var(--ink-dim); margin-left:10px; flex-shrink:0; transition:color 180ms; }
 .card-row:focus  {
   outline:none;
   background:var(--card-hi);
   border-color:var(--accent-border);
-  box-shadow:0 2px 20px rgba(79,168,232,0.1);
+  box-shadow:0 2px 20px rgba(79,168,232,0.08);
 }
 .card-row:focus .chev { color:var(--accent); }
-.card-row.empty { opacity:0.32; pointer-events:none; }
+.card-row.empty  { opacity:0.32; pointer-events:none; }
 
-/* ── HOME tabs ── */
-#home { padding:24px 22px 0; }
-
-.tab-bar {
-  display:flex; gap:7px; margin-bottom:14px; flex-shrink:0;
-}
-.tab-btn {
-  flex:1; height:38px; border-radius:12px;
-  background:var(--card); border:1.5px solid transparent;
-  color:var(--ink-dim); font-family:var(--font); font-size:13px;
-  cursor:pointer;
-  transition:background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
-}
-.tab-btn.tab-active, .tab-btn:focus {
-  outline:none;
-  background:var(--card-hi);
-  border-color:var(--accent-border);
-  color:var(--accent);
-}
-
-.tab-panels { flex:1; position:relative; overflow:hidden; }
-.tab-panel  {
-  display:none; position:absolute; inset:0;
-  overflow-y:auto; padding-bottom:16px;
-}
-.tab-panel::-webkit-scrollbar { display:none; }
-.tab-panel.panel-active { display:block; }
-
-/* ── Library: volume card grid ── */
+/* ── Volume card grid (Library screen) ── */
 .vol-grid {
-  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  overflow-y:auto;
+  flex:1;
+  align-content:flex-start;
+  padding-bottom:4px;
 }
+.vol-grid::-webkit-scrollbar { display:none; }
+
 .vol-card {
-  height:112px; border-radius:16px;
-  padding:0; position:relative; overflow:hidden;
-  cursor:pointer; border:1.5px solid transparent;
-  transition:border-color 200ms var(--ease), transform 160ms var(--ease), box-shadow 200ms var(--ease);
+  height:90px;
+  background:var(--card);
+  border-radius:14px;
+  border:1.5px solid transparent;
+  display:flex; align-items:center; justify-content:center;
+  padding:12px 10px;
+  text-align:center;
+  cursor:pointer;
+  transition:background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
 }
 .vol-card:focus {
   outline:none;
-  border-color:rgba(255,255,255,0.55);
-  transform:scale(1.025);
-  box-shadow:0 6px 28px rgba(0,0,0,0.5);
-}
-.vol-card.empty { opacity:0.38; pointer-events:none; }
-.vol-card-bg {
-  position:absolute; inset:0;
-  background:linear-gradient(135deg, var(--c1), var(--c2));
-}
-.vol-card-scrim {
-  position:absolute; inset:0;
-  background:linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 60%);
-}
-.vol-card-name {
-  position:absolute; bottom:14px; left:15px; right:15px;
-  font-size:15px; font-weight:600;
-  color:rgba(255,255,255,0.96); line-height:1.25;
-}
-
-/* ── Recents tab ── */
-.recents-section-label {
-  font-size:11px; letter-spacing:2px; text-transform:uppercase;
-  color:var(--ink-dim); margin:14px 0 8px; padding-left:2px;
-}
-.recents-section-label:first-child { margin-top:2px; }
-.recents-note {
-  font-size:13px; color:var(--ink-dim); padding:6px 2px;
-}
-
-/* ── Appearance tab ── */
-.appear-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:4px; }
-.appear-card {
-  height:130px; border-radius:16px;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:10px;
-  background:var(--card);
-  border:1.5px solid transparent;
-  cursor:pointer;
-  transition:background 200ms var(--ease), border-color 200ms var(--ease);
-}
-.appear-card:focus, .appear-card.appear-active {
-  outline:none;
   background:var(--card-hi);
   border-color:var(--accent-border);
+  box-shadow:0 2px 20px rgba(79,168,232,0.08);
 }
-.appear-icon { font-size:28px; }
-.appear-label { font-size:15px; font-weight:600; color:var(--ink); }
-.appear-card.appear-active .appear-label { color:var(--accent); }
+.vol-card.empty { opacity:0.32; pointer-events:none; }
+.vol-card-name  { font-size:13px; font-weight:600; color:var(--ink); line-height:1.3; }
 
-/* ── Chapters chip grid ── */
+/* ── Chapter chips ── */
 .chip-grid {
   display:flex; flex-wrap:wrap; gap:8px;
   overflow-y:auto; flex:1; align-content:flex-start;
@@ -237,7 +173,7 @@ html,body {
   outline:none;
   background:var(--card-hi);
   border-color:var(--accent-border);
-  box-shadow:0 2px 20px rgba(79,168,232,0.1);
+  box-shadow:0 2px 20px rgba(79,168,232,0.08);
 }
 .chip.empty { opacity:0.32; pointer-events:none; }
 
@@ -245,50 +181,46 @@ html,body {
 #reader { padding:20px 22px 14px; }
 .reader-header {
   display:flex; align-items:center; gap:10px;
-  padding-bottom:13px; border-bottom:1px solid var(--divider);
-  flex-shrink:0;
+  padding-bottom:13px; border-bottom:1px solid var(--divider); flex-shrink:0;
 }
-.ref-tag { font-size:14px; font-weight:600; color:var(--accent); flex:1; line-height:1.2; }
+.ref-tag    { font-size:14px; font-weight:600; color:var(--accent); flex:1; line-height:1.2; }
 .verse-counter {
   font-size:12px; color:var(--ink-dim);
-  background:var(--card); padding:3px 10px;
-  border-radius:20px; flex-shrink:0;
+  background:var(--card); padding:3px 10px; border-radius:20px; flex-shrink:0;
 }
-.bookmark-flag { font-size:17px; color:var(--ink-dim); flex-shrink:0; }
+.bookmark-flag    { font-size:17px; color:var(--ink-dim); flex-shrink:0; }
 .bookmark-flag.on { color:var(--accent); }
 
-.chapter-scroll {
-  flex:1; overflow-y:auto; padding:10px 0 16px;
-  scrollbar-width:none;
-}
+.chapter-scroll { flex:1; overflow-y:auto; padding:10px 0 16px; scrollbar-width:none; }
 .chapter-scroll::-webkit-scrollbar { display:none; }
 
 .verse-row {
-  padding:5px 10px 5px 12px;
+  padding:5px 10px 5px 13px;
   border-left:3px solid transparent;
   border-radius:0 10px 10px 0;
   transition:border-color 200ms var(--ease), background 200ms var(--ease);
 }
 .verse-row + .verse-row { margin-top:2px; }
-.verse-row.current {
-  border-left-color:var(--accent);
-  background:rgba(79,168,232,0.09);
-}
+.verse-row.current { border-left-color:var(--accent); background:rgba(79,168,232,0.09); }
 [data-theme="light"] .verse-row.current { background:rgba(0,74,148,0.08); }
 .verse-body { font-size:19px; line-height:1.78; color:var(--ink); }
-.verse-num  {
-  font-size:10px; font-weight:700; color:var(--accent);
-  vertical-align:super; line-height:0;
-  margin-right:1px; opacity:0.7;
-}
+.verse-num  { font-size:10px; font-weight:700; color:var(--accent); vertical-align:super; line-height:0; margin-right:1px; opacity:0.65; }
 
 .empty-state {
   padding:40px 0; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:8px;
-  color:var(--ink-dim); font-size:14px; text-align:center;
+  align-items:center; justify-content:center;
+  gap:8px; color:var(--ink-dim); font-size:14px; text-align:center;
 }
 
-/* ── Menu overlay ── */
+/* ── Recents section labels ── */
+.section-label {
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--ink-dim); padding:4px 2px 6px; flex-shrink:0;
+}
+.section-label:first-child { padding-top:0; }
+.recents-note { font-size:13px; color:var(--ink-dim); padding:4px 2px; }
+
+/* ── Menu ── */
 #menu {
   position:absolute; inset:0; display:none;
   background:var(--scrim);
@@ -296,19 +228,13 @@ html,body {
   flex-direction:column; justify-content:center; padding:0 40px;
 }
 #menu.active { display:flex; }
-.menu-inner {
-  border-radius:18px; overflow:hidden;
-  border:1px solid var(--divider);
-  background:var(--card);
-}
+.menu-inner { border-radius:18px; overflow:hidden; border:1px solid var(--divider); background:var(--card); }
 .menu-btn {
   min-height:58px; width:100%;
   display:flex; align-items:center; gap:16px;
-  padding:0 20px;
-  border-bottom:1px solid var(--divider);
+  padding:0 20px; border-bottom:1px solid var(--divider);
   font-family:var(--font); font-size:17px; color:var(--ink);
-  background:transparent;
-  transition:background 160ms var(--ease);
+  background:transparent; transition:background 160ms var(--ease);
 }
 .menu-btn:last-child { border-bottom:none; }
 .menu-btn:focus { outline:none; background:var(--card-hi); }
@@ -320,42 +246,43 @@ html,body {
 
   <!-- BOOT -->
   <section class="screen active" id="boot">
-    <div class="spinner">
-      <div class="spinner-track"></div>
-      <div class="spinner-arc"></div>
-    </div>
+    <div class="spinner"><div class="spinner-track"></div><div class="spinner-arc"></div></div>
     <div class="boot-wordmark">Bookshelf</div>
     <div class="boot-status" id="bootStatus">Loading library…</div>
   </section>
 
-  <!-- HOME (tabbed) -->
+  <!-- HOME -->
   <section class="screen" id="home">
-    <div class="eyebrow" style="margin-bottom:12px">Bookshelf</div>
-    <div class="tab-bar">
-      <button class="tab-btn focusable tab-active" data-tab="library">Library</button>
-      <button class="tab-btn focusable" data-tab="recents">Recents</button>
-      <button class="tab-btn focusable" data-tab="appearance">Appearance</button>
-    </div>
-    <div class="tab-panels">
-      <div class="tab-panel panel-active" id="panel-library">
-        <div class="vol-grid" id="volGrid"></div>
+    <div class="eyebrow">Bookshelf</div>
+    <div class="screen-title">Scripture Library</div>
+    <div class="card-list">
+      <div class="card-row focusable" id="homeLibrary" tabindex="0">
+        <div><div class="label">Library</div></div>
+        <div class="chev">›</div>
       </div>
-      <div class="tab-panel" id="panel-recents">
-        <div id="recentsList"></div>
+      <div class="card-row focusable" id="homeRecents" tabindex="0">
+        <div><div class="label">Recents</div></div>
+        <div class="chev">›</div>
       </div>
-      <div class="tab-panel" id="panel-appearance">
-        <div class="appear-grid">
-          <div class="appear-card focusable" data-theme-select="light" tabindex="0">
-            <div class="appear-icon">☀️</div>
-            <div class="appear-label">Light</div>
-          </div>
-          <div class="appear-card focusable appear-active" data-theme-select="dark" tabindex="0">
-            <div class="appear-icon">🌙</div>
-            <div class="appear-label">Dark</div>
-          </div>
-        </div>
+      <div class="card-row focusable" id="homeTheme" tabindex="0">
+        <div><div class="label" id="themeLabel">Light Mode</div></div>
+        <div class="chev" id="themeIcon">☀️</div>
       </div>
     </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="screen" id="library">
+    <div class="eyebrow">Library</div>
+    <div class="screen-title">Standard Works</div>
+    <div class="vol-grid" id="volGrid"></div>
+  </section>
+
+  <!-- RECENTS -->
+  <section class="screen" id="recents">
+    <div class="eyebrow">History</div>
+    <div class="screen-title">Recents</div>
+    <div class="card-list" id="recentsList"></div>
   </section>
 
   <!-- BOOKS -->
@@ -394,18 +321,6 @@ html,body {
 
 </div>
 <script>
-/* ── Volume card palette (assigned by manifest order) ── */
-const VOL_THEMES = [
-  { c1:'#5B3820', c2:'#9A6040' },
-  { c1:'#2A1860', c2:'#4B3298' },
-  { c1:'#1C4A30', c2:'#2E7D52' },
-  { c1:'#0F2E50', c2:'#1A4A80' },
-  { c1:'#4A380E', c2:'#8A6820' },
-  { c1:'#2A3848', c2:'#3C5568' },
-  { c1:'#1E3C2A', c2:'#2E5C42' },
-  { c1:'#4A2035', c2:'#7A3860' },
-];
-
 /* ── Data ── */
 const SCRIPTURES = { volumes: [] };
 
@@ -421,7 +336,8 @@ async function loadLibrary(){
       if (!res.ok){ console.warn('Skipping ' + file); continue; }
       SCRIPTURES.volumes.push(await res.json());
     }
-    renderHome(); showScreen('home');
+    renderHome();
+    showScreen('home');
   } catch(err){
     statusEl.textContent = '';
     const el = document.createElement('div');
@@ -432,8 +348,8 @@ async function loadLibrary(){
 }
 
 function getVolume(id){ return SCRIPTURES.volumes.find(v => v.id === id); }
-function getBook(vId, bId){ return getVolume(vId).books.find(b => b.id === bId); }
-function getChapter(vId, bId, num){ return getBook(vId, bId).chapters.find(c => c.num === num); }
+function getBook(vId,bId){ return getVolume(vId).books.find(b => b.id === bId); }
+function getChapter(vId,bId,num){ return getBook(vId,bId).chapters.find(c => c.num === num); }
 function verseText(v){ return typeof v === 'string' ? v : v.text; }
 
 /* ── State ── */
@@ -462,8 +378,7 @@ function touchRecent(){
 function isBookmarked(){ return bookmarks().some(b=>b.key===verseKey(nav.volumeId,nav.bookId,nav.chapterNum,nav.verseIdx)); }
 function toggleBookmark(){
   const key=verseKey(nav.volumeId,nav.bookId,nav.chapterNum,nav.verseIdx);
-  let list=bookmarks();
-  const idx=list.findIndex(b=>b.key===key);
+  let list=bookmarks(); const idx=list.findIndex(b=>b.key===key);
   const book=getBook(nav.volumeId,nav.bookId);
   const chapter=getChapter(nav.volumeId,nav.bookId,nav.chapterNum);
   const label=(chapter.title?chapter.title:(book.name+' '+nav.chapterNum))+' : '+(nav.verseIdx+1);
@@ -475,14 +390,14 @@ function toggleBookmark(){
 
 /* ── Theme ── */
 function applyTheme(name){
-  document.documentElement.setAttribute('data-theme', name);
-  saveJSON('gl_theme', name);
-  document.querySelectorAll('.appear-card').forEach(c => {
-    c.classList.toggle('appear-active', c.dataset.themeSelect === name);
-  });
+  document.documentElement.setAttribute('data-theme',name);
+  saveJSON('gl_theme',name);
+  const isDark = name === 'dark';
+  document.getElementById('themeLabel').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  document.getElementById('themeIcon').textContent  = isDark ? '☀️' : '🌙';
 }
-function loadTheme(){
-  applyTheme(loadJSON('gl_theme','dark'));
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark');
 }
 
 /* ── Screen router ── */
@@ -493,42 +408,33 @@ function showScreen(id){
   if(first) first.focus();
 }
 
-/* ── Tabs ── */
-function activateTab(tabId){
-  document.querySelectorAll('.tab-btn').forEach(b=>{
-    b.classList.toggle('tab-active', b.dataset.tab===tabId);
-  });
-  document.querySelectorAll('.tab-panel').forEach(p=>{
-    p.classList.toggle('panel-active', p.id==='panel-'+tabId);
-  });
-  if(tabId==='recents') renderRecentsTab();
+/* ── Row builder ── */
+function makeRow(label, sub, onSelect, empty){
+  const row=document.createElement('div');
+  row.className='card-row focusable'+(empty?' empty':'');
+  row.tabIndex=0;
+  row.innerHTML=`<div><div class="label">${label}</div>${sub?`<div class="sub">${sub}</div>`:''}</div><div class="chev">›</div>`;
+  row.addEventListener('click',onSelect);
+  return row;
 }
 
-/* ── HOME ── */
+/* ── Home ── */
 function renderHome(){
-  renderLibraryTab();
-  renderRecentsTab();
-  /* tab btn listeners */
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.onclick=()=>{ activateTab(btn.dataset.tab); btn.focus(); };
-  });
-  /* appearance cards */
-  document.querySelectorAll('.appear-card').forEach(card=>{
-    card.onclick=()=>applyTheme(card.dataset.themeSelect);
-  });
+  document.getElementById('homeLibrary').onclick = () => { renderLibrary(); showScreen('library'); };
+  document.getElementById('homeRecents').onclick = () => { renderRecents(); showScreen('recents'); };
+  document.getElementById('homeTheme').onclick   = () => toggleTheme();
+  applyTheme(loadJSON('gl_theme','dark'));
 }
 
-function renderLibraryTab(){
+/* ── Library ── */
+function renderLibrary(){
   const grid=document.getElementById('volGrid');
   grid.innerHTML='';
-  SCRIPTURES.volumes.forEach((v,i)=>{
-    const t=VOL_THEMES[i%VOL_THEMES.length];
+  SCRIPTURES.volumes.forEach(v=>{
     const card=document.createElement('div');
     card.className='vol-card focusable'+(v.books.length===0?' empty':'');
     card.tabIndex=0;
-    card.style.setProperty('--c1',t.c1);
-    card.style.setProperty('--c2',t.c2);
-    card.innerHTML=`<div class="vol-card-bg"></div><div class="vol-card-scrim"></div><div class="vol-card-name">${v.name}</div>`;
+    card.innerHTML=`<div class="vol-card-name">${v.name}</div>`;
     card.addEventListener('click',()=>{
       if(!v.books.length) return;
       nav.volumeId=v.id; renderBooks(); showScreen('books');
@@ -537,44 +443,31 @@ function renderLibraryTab(){
   });
 }
 
-function renderRecentsTab(){
-  const el=document.getElementById('recentsList');
-  el.innerHTML='';
+/* ── Recents ── */
+function renderRecents(){
+  const list=document.getElementById('recentsList');
+  list.innerHTML='';
 
   const rec=recents();
-  const lbl1=document.createElement('div'); lbl1.className='recents-section-label'; lbl1.textContent='Continue Reading';
-  el.appendChild(lbl1);
+  const lbl1=document.createElement('div'); lbl1.className='section-label'; lbl1.textContent='Continue Reading';
+  list.appendChild(lbl1);
   if(rec.length){
-    rec.forEach(r=>{
-      el.appendChild(makeCardRow(r.label, r.volumeName, ()=>{
-        nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader();
-      }));
-    });
+    rec.forEach(r=>list.appendChild(makeRow(r.label, r.volumeName, ()=>{
+      nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader();
+    })));
   } else {
     const n=document.createElement('div'); n.className='recents-note'; n.textContent='Chapters you open will appear here.';
-    el.appendChild(n);
+    list.appendChild(n);
   }
 
   const bm=bookmarks();
   if(bm.length){
-    const lbl2=document.createElement('div'); lbl2.className='recents-section-label'; lbl2.textContent='Bookmarks';
-    el.appendChild(lbl2);
-    bm.forEach(b=>{
-      el.appendChild(makeCardRow('♥ '+b.label, null, ()=>{
-        nav={volumeId:b.volumeId,bookId:b.bookId,chapterNum:b.chapterNum,verseIdx:b.verseIdx}; openReader();
-      }));
-    });
+    const lbl2=document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Bookmarks';
+    list.appendChild(lbl2);
+    bm.forEach(b=>list.appendChild(makeRow('♥ '+b.label, null, ()=>{
+      nav={volumeId:b.volumeId,bookId:b.bookId,chapterNum:b.chapterNum,verseIdx:b.verseIdx}; openReader();
+    })));
   }
-}
-
-/* ── Row builder ── */
-function makeCardRow(label, sub, onSelect, empty){
-  const row=document.createElement('div');
-  row.className='card-row focusable'+(empty?' empty':'');
-  row.tabIndex=0;
-  row.innerHTML=`<div><div class="label">${label}</div>${sub?`<div style="font-size:12px;color:var(--ink-dim);margin-top:3px">${sub}</div>`:''}</div><div class="chev">›</div>`;
-  row.addEventListener('click',onSelect);
-  return row;
 }
 
 /* ── Books ── */
@@ -584,9 +477,9 @@ function renderBooks(){
   document.getElementById('booksTitle').textContent='Books';
   const list=document.getElementById('booksList');
   list.innerHTML='';
-  vol.books.forEach(b=>{
-    list.appendChild(makeCardRow(b.name, null, ()=>{ nav.bookId=b.id; renderChapters(); showScreen('chapters'); }));
-  });
+  vol.books.forEach(b=>list.appendChild(makeRow(b.name, null, ()=>{
+    nav.bookId=b.id; renderChapters(); showScreen('chapters');
+  })));
 }
 
 /* ── Chapters ── */
@@ -614,7 +507,6 @@ function openReader(){
   showScreen('reader');
   renderChapterContent();
 }
-
 function renderChapterContent(){
   const book=getBook(nav.volumeId,nav.bookId);
   const chapter=getChapter(nav.volumeId,nav.bookId,nav.chapterNum);
@@ -637,7 +529,6 @@ function renderChapterContent(){
   });
   requestAnimationFrame(()=>updateVerseUI(false));
 }
-
 function updateVerseUI(smooth){
   const scroll=document.getElementById('chapterScroll');
   const chapter=getChapter(nav.volumeId,nav.bookId,nav.chapterNum);
@@ -649,13 +540,11 @@ function updateVerseUI(smooth){
   document.getElementById('verseCounter').textContent=(nav.verseIdx+1)+' / '+chapter.verses.length;
   renderBookmarkFlag(); touchRecent();
 }
-
 function renderBookmarkFlag(){
   const on=isBookmarked();
   document.getElementById('bookmarkFlag').classList.toggle('on',on);
   document.getElementById('bookmarkLabel').textContent=on?'Remove bookmark':'Bookmark this verse';
 }
-
 function stepVerse(d){
   const ch=getChapter(nav.volumeId,nav.bookId,nav.chapterNum);
   if(!ch.verses.length) return;
@@ -680,43 +569,27 @@ function openMenu(){
   document.getElementById('menu').classList.add('active');
   const first=visibleMenuBtns()[0]; if(first) first.focus();
 }
-function closeMenu(){
-  menuOpen=false;
-  document.getElementById('menu').classList.remove('active');
-}
+function closeMenu(){ menuOpen=false; document.getElementById('menu').classList.remove('active'); }
 document.querySelectorAll('#menu .menu-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const a=btn.dataset.action;
     if(a==='resume') closeMenu();
     else if(a==='bookmark'){ toggleBookmark(); closeMenu(); }
     else if(a==='chapters'){ closeMenu(); renderChapters(); showScreen('chapters'); }
-    else if(a==='home'){ closeMenu(); renderHome(); showScreen('home'); }
+    else if(a==='home'){ closeMenu(); showScreen('home'); }
   });
 });
 
 /* ── Focus navigation ── */
-function visibleFocusables(scope){
-  return Array.from(scope.querySelectorAll('.focusable')).filter(el=>{
-    if(menuOpen) return el.style.display!=='none';
-    let node=el;
-    while(node&&node!==scope){
-      const s=getComputedStyle(node);
-      if(s.display==='none'||s.visibility==='hidden') return false;
-      node=node.parentElement;
-    }
-    return true;
-  });
-}
-
 function moveFocus(dir){
   const scope=menuOpen?document.getElementById('menu'):document.querySelector('.screen.active');
-  const items=visibleFocusables(scope);
+  const items=Array.from(scope.querySelectorAll('.focusable')).filter(el=>{
+    let n=el; while(n&&n!==scope){ if(getComputedStyle(n).display==='none') return false; n=n.parentElement; } return true;
+  });
   if(!items.length) return;
   const idx=items.indexOf(document.activeElement);
   if(idx===-1){ items[0].focus(); return; }
-  const next=(dir==='up'||dir==='left')
-    ?(idx>0?idx-1:items.length-1)
-    :(idx<items.length-1?idx+1:0);
+  const next=(dir==='up'||dir==='left')?(idx>0?idx-1:items.length-1):(idx<items.length-1?idx+1:0);
   items[next].focus();
   items[next].scrollIntoView({block:'nearest',behavior:'smooth'});
 }
@@ -749,7 +622,6 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ── Init ── */
-loadTheme();
 loadLibrary();
 </script>
 </body>
