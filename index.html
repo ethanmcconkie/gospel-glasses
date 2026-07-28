@@ -52,84 +52,84 @@ html, body {
 }
 
 /* ── Boot ── */
-#boot { justify-content:center; align-items:center; gap:26px; }
-.boot-rule {
-  width:32px; height:0.5px; background:var(--gold); opacity:0.4;
-}
-.boot-wordmark {
-  font-size:22px; font-weight:600; letter-spacing:-0.3px;
-  color:var(--ink);
-}
-.boot-status { font-size:11px; color:var(--ink-dim); }
+#boot { justify-content:center; align-items:center; gap:40px; }
+.boot-status { display:none; }
 .boot-error  { font-size:12px; color:#FF7B7B; max-width:440px; text-align:center; }
+.boot-wordmark {
+  font-family:var(--font); font-size:20px; font-weight:400;
+  letter-spacing:10px; text-transform:uppercase; text-indent:10px;
+  color:var(--ink); opacity:0.82;
+}
 
-/* ── Book flip animation ── */
-.book-anim {
-  position:relative; width:176px; height:118px;
-  perspective:700px;
+/* ── 3-D book — side / eye-level view ── */
+.bk-scene {
+  perspective:520px;
+  perspective-origin:50% -30%;
+  width:220px; height:108px;
+  position:relative;
 }
-/* Left (navy) page stack */
-.ba-left {
-  position:absolute; left:0; top:0; width:76px; height:118px;
-  background:linear-gradient(to right, #06090F 0%, #0E1622 65%, #162030 100%);
-  border-radius:6px 0 0 6px; z-index:14;
+.bk-body {
+  width:200px; height:134px;
+  margin:0 auto;
+  transform:rotateX(62deg);
+  transform-style:preserve-3d;
+  position:relative;
 }
-/* Right (cream) page stack */
-.ba-right {
-  position:absolute; right:0; top:0; width:76px; height:118px;
-  background:linear-gradient(to left, #E0DCCF 0%, #ECEADF 55%, #E8E4D8 100%);
-  border-radius:0 6px 6px 0; z-index:1;
+.bk-cover-l {
+  position:absolute; left:0; top:0; width:94px; height:134px;
+  background:linear-gradient(to right,#04060C 0%,#0C1524 65%,#111E32 100%);
+  border-radius:5px 0 0 5px; z-index:20;
 }
-/* Spine */
-.ba-spine {
-  position:absolute; left:76px; top:0; width:24px; height:118px;
-  background:linear-gradient(to right, #020408 0%, #08101C 30%, #0C1828 55%, #020408 100%);
-  z-index:15;
+.bk-spine {
+  position:absolute; left:94px; top:0; width:12px; height:134px;
+  background:linear-gradient(to right,#020406 0%,#05090F 40%,#020406 100%);
+  z-index:25;
 }
-.ba-spine::after {
+.bk-spine::before {
   content:''; position:absolute;
-  top:14px; bottom:14px; left:50%; width:1px; transform:translateX(-50%);
-  background:linear-gradient(to bottom, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
-  opacity:0.38;
+  top:12px; bottom:12px; left:50%; width:1px;
+  transform:translateX(-50%);
+  background:linear-gradient(to bottom,transparent,var(--gold) 22%,var(--gold) 78%,transparent);
+  opacity:0.55;
 }
-/* Flipping page container */
-.ba-page {
-  position:absolute;
-  left:100px; top:4px;          /* right of spine */
-  width:72px; height:110px;
+.bk-cover-r {
+  position:absolute; right:0; top:0; width:94px; height:134px;
+  background:linear-gradient(to left,#D8D4C8 0%,#ECEADF 60%,#F2EFE8 100%);
+  border-radius:0 5px 5px 0; z-index:1;
+}
+.bk-pg {
+  position:absolute; left:106px; top:3px;
+  width:90px; height:128px;
   transform-origin:left center;
   transform-style:preserve-3d;
-  animation:baFlip 1.5s cubic-bezier(0.4,0,0.2,1) infinite;
-  animation-delay:var(--d,0s);
-  z-index:12;
+  animation:bkFlip 2s cubic-bezier(0.42,0,0.32,1) infinite;
+  animation-delay:calc(var(--i)*0.4s);
+  z-index:10;
 }
-/* Front face — cream unread page */
-.ba-pf {
-  position:absolute; inset:0;
-  background:linear-gradient(135deg, #D8D4C8 0%, #ECEADF 100%);
+.bk-pg-f, .bk-pg-b { position:absolute; inset:0; }
+.bk-pg-f {
+  background:linear-gradient(to right,#C8C4B8 0%,#ECEADF 70%,#F2EFE8 100%);
   border-radius:0 4px 4px 0;
   backface-visibility:hidden;
 }
-.ba-pf::after {
+.bk-pg-f::after {
   content:''; position:absolute;
-  left:9px; right:7px; top:16px; bottom:16px;
+  left:10px; right:8px; top:14px; bottom:14px;
   background:repeating-linear-gradient(
     to bottom,
-    rgba(8,12,22,0.09) 0, rgba(8,12,22,0.09) 1px,
+    rgba(8,12,24,0.07) 0, rgba(8,12,24,0.07) 1px,
     transparent 1px, transparent 8px
   );
 }
-/* Back face — navy (page has flipped) */
-.ba-pb {
-  position:absolute; inset:0;
-  background:linear-gradient(135deg, #0A1020 0%, #162030 100%);
+.bk-pg-b {
+  background:linear-gradient(to left,#070D1C 0%,#0F1C30 100%);
   border-radius:4px 0 0 4px;
   backface-visibility:hidden;
   transform:rotateY(180deg);
 }
-@keyframes baFlip {
+@keyframes bkFlip {
   0%   { transform:rotateY(0deg); }
-  35%  { transform:rotateY(-180deg); }
+  40%  { transform:rotateY(-180deg); }
   100% { transform:rotateY(-180deg); }
 }
 
@@ -327,13 +327,17 @@ html, body {
 
   <!-- BOOT -->
   <section class="screen active" id="boot">
-    <div class="book-anim">
-      <div class="ba-left"></div>
-      <div class="ba-right"></div>
-      <div class="ba-spine"></div>
-      <div class="ba-page" style="--d:0s"><div class="ba-pf"></div><div class="ba-pb"></div></div>
-      <div class="ba-page" style="--d:.5s"><div class="ba-pf"></div><div class="ba-pb"></div></div>
-      <div class="ba-page" style="--d:1s"><div class="ba-pf"></div><div class="ba-pb"></div></div>
+    <div class="bk-scene">
+      <div class="bk-body">
+        <div class="bk-cover-l"></div>
+        <div class="bk-spine"></div>
+        <div class="bk-cover-r"></div>
+        <div class="bk-pg" style="--i:0"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+        <div class="bk-pg" style="--i:1"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+        <div class="bk-pg" style="--i:2"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+        <div class="bk-pg" style="--i:3"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+        <div class="bk-pg" style="--i:4"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+      </div>
     </div>
     <div class="boot-wordmark">Library</div>
     <div class="boot-status" id="bootStatus"></div>
@@ -421,7 +425,7 @@ async function loadLibrary(){
     if (!mRes.ok) throw new Error('manifest.json not found (' + mRes.status + ')');
     const files = await mRes.json();
     for (const file of files){
-      statusEl.textContent = 'Loading ' + file + '…';
+      // statusEl hidden via CSS — no visible loading text
       const res = await fetch('data/' + file);
       if (!res.ok){ console.warn('Skipping ' + file); continue; }
       SCRIPTURES.volumes.push(await res.json());
