@@ -3,7 +3,7 @@
   "short_name": "Bookshelf",
   "description": "Scripture Library for Meta Ray-Ban Display",
   "icons": [
-    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "start_url": "./",
   "display": "standalone",
