@@ -52,13 +52,62 @@ html, body {
 }
 
 /* ── Boot ── */
-#boot { justify-content:center; align-items:center; gap:40px; }
+#boot { justify-content:center; align-items:center; gap:36px; }
 .boot-status { display:none; }
 .boot-error  { font-size:12px; color:#FF7B7B; max-width:440px; text-align:center; }
 .boot-wordmark {
   font-family:var(--font); font-size:20px; font-weight:400;
   letter-spacing:10px; text-transform:uppercase; text-indent:10px;
   color:var(--ink); opacity:0.82;
+}
+.boot-row {
+  display:flex; flex-direction:row;
+  align-items:flex-end; gap:22px;
+}
+
+/* ── Mate cup ── */
+.mate { position:relative; width:54px; height:92px; flex-shrink:0; }
+/* bombilla straw */
+.mate-straw {
+  position:absolute; bottom:56px; left:22px;
+  width:5px; height:54px;
+  background:linear-gradient(to right,#787878,#E4E4E4 38%,#C8C8C8 60%,#888);
+  border-radius:3px 3px 2px 2px;
+  transform:rotate(-16deg); transform-origin:bottom center;
+  z-index:3;
+}
+.mate-straw::before {
+  content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%);
+  width:10px; height:10px;
+  background:radial-gradient(circle at 40% 35%,#E0E0E0,#909090);
+  border-radius:50%;
+}
+/* gold rim band */
+.mate-rim {
+  position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
+  width:28px; height:10px;
+  background:linear-gradient(to bottom,var(--gold),#8A6A28);
+  border-radius:3px 3px 0 0;
+  z-index:2;
+}
+/* gourd body */
+.mate-gourd {
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:50px; height:58px;
+  background:linear-gradient(150deg,#17300D 0%,#244A18 32%,#2E5C20 60%,#193210 100%);
+  border-radius:50% 50% 44% 44% / 28% 28% 56% 56%;
+  overflow:hidden;
+}
+.mate-gourd::before {
+  content:''; position:absolute;
+  top:7px; left:8px; width:13px; height:20px;
+  background:radial-gradient(ellipse at 38% 30%,rgba(255,255,255,0.19) 0%,transparent 72%);
+  border-radius:50%;
+}
+.mate-gourd::after {
+  content:''; position:absolute;
+  bottom:0; left:0; right:0; height:14px;
+  background:linear-gradient(to top,rgba(0,0,0,0.28),transparent);
 }
 
 /* ── 3-D book — side / eye-level view ── */
@@ -327,16 +376,23 @@ html, body {
 
   <!-- BOOT -->
   <section class="screen active" id="boot">
-    <div class="bk-scene">
-      <div class="bk-body">
-        <div class="bk-cover-l"></div>
-        <div class="bk-spine"></div>
-        <div class="bk-cover-r"></div>
-        <div class="bk-pg" style="--i:0"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
-        <div class="bk-pg" style="--i:1"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
-        <div class="bk-pg" style="--i:2"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
-        <div class="bk-pg" style="--i:3"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
-        <div class="bk-pg" style="--i:4"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+    <div class="boot-row">
+      <div class="bk-scene">
+        <div class="bk-body">
+          <div class="bk-cover-l"></div>
+          <div class="bk-spine"></div>
+          <div class="bk-cover-r"></div>
+          <div class="bk-pg" style="--i:0"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+          <div class="bk-pg" style="--i:1"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+          <div class="bk-pg" style="--i:2"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+          <div class="bk-pg" style="--i:3"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+          <div class="bk-pg" style="--i:4"><div class="bk-pg-f"></div><div class="bk-pg-b"></div></div>
+        </div>
+      </div>
+      <div class="mate">
+        <div class="mate-straw"></div>
+        <div class="mate-rim"></div>
+        <div class="mate-gourd"></div>
       </div>
     </div>
     <div class="boot-wordmark">Library</div>
