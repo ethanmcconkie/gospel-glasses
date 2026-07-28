@@ -114,19 +114,31 @@ html, body {
 }
 .vol-grid::-webkit-scrollbar { display:none; }
 .vol-card {
-  height:90px; background:var(--card); border-radius:14px;
-  border:1.5px solid transparent;
-  display:flex; align-items:center; justify-content:center;
-  padding:12px 10px; text-align:center; cursor:pointer;
-  transition:background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+  height:130px;
+  background:var(--cover-bg, var(--card));
+  border-radius:10px; border:1.5px solid transparent;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:14px 10px; text-align:center; cursor:pointer;
+  transition:box-shadow 180ms var(--ease), outline-color 180ms var(--ease);
+  position:relative; overflow:hidden;
 }
 .vol-card:focus {
-  outline:none; background:var(--card-hi);
-  border-color:var(--accent-border);
-  box-shadow:0 2px 20px rgba(79,168,232,0.08);
+  outline:2px solid var(--cover-fg, var(--accent));
+  outline-offset:-3px;
+  box-shadow:0 4px 24px rgba(0,0,0,0.45);
 }
 .vol-card.empty { opacity:0.32; pointer-events:none; }
-.vol-card-name  { font-size:13px; font-weight:600; color:var(--ink); line-height:1.3; }
+.vol-card-name {
+  font-size:10px; font-weight:600; letter-spacing:1.8px;
+  text-transform:uppercase;
+  color:var(--cover-fg, var(--ink));
+  line-height:1.5;
+  border-top:1px solid var(--cover-fg, var(--ink));
+  border-bottom:1px solid var(--cover-fg, var(--ink));
+  padding:5px 0; width:80%;
+  opacity:0.88;
+}
 
 /* ── Chapter chips ── */
 .chip-grid {
@@ -183,8 +195,8 @@ html, body {
 .verse-row.current { border-left-color:var(--accent); background:rgba(79,168,232,0.09); }
 .verse-body { font-size:19px; line-height:1.78; color:var(--ink); }
 .verse-num  {
-  font-size:10px; font-weight:700; color:var(--accent);
-  vertical-align:super; line-height:0; margin-right:1px; opacity:0.65;
+  font-size:13px; font-weight:700; color:var(--accent);
+  margin-right:3px; opacity:0.75;
 }
 .empty-state {
   padding:40px 0; display:flex; flex-direction:column;
@@ -392,14 +404,29 @@ function renderHome(){
   document.getElementById('homeRecents').onclick = ()=>{ renderRecents(); showScreen('recents'); };
 }
 
+/* ── Vol cover palette (keyed by vol.id) ── */
+const VOL_COVERS = {
+  'ot':     { bg:'#0D1117', fg:'#C9A84C' },
+  'nt':     { bg:'#162038', fg:'#C9A84C' },
+  'bom':    { bg:'#0D2035', fg:'#C9A84C' },
+  'dc':     { bg:'#0F2820', fg:'#8FC48A' },
+  'pgp':    { bg:'#1F1030', fg:'#C9A84C' },
+  'bd':     { bg:'#1A1A28', fg:'#A8ACBC' },
+  'gts':    { bg:'#0E2218', fg:'#9FC9A4' },
+  'family': { bg:'#2A1010', fg:'#C9A84C' },
+};
+
 /* ── Library ── */
 function renderLibrary(){
   const grid = document.getElementById('volGrid');
   grid.innerHTML = '';
   SCRIPTURES.volumes.forEach(v=>{
+    const cover = VOL_COVERS[v.id] || { bg:'#111', fg:'#C9A84C' };
     const card = document.createElement('div');
     card.className = 'vol-card focusable' + (v.books.length===0?' empty':'');
     card.tabIndex = 0;
+    card.style.setProperty('--cover-bg', cover.bg);
+    card.style.setProperty('--cover-fg', cover.fg);
     card.innerHTML = `<div class="vol-card-name">${v.name}</div>`;
     card.addEventListener('click',()=>{
       if(!v.books.length) return;
@@ -487,7 +514,7 @@ function renderChapterContent(){
   chapter.verses.forEach((v,i)=>{
     const row = document.createElement('div');
     row.className = 'verse-row'; row.dataset.idx = i;
-    row.innerHTML = `<div class="verse-body"><sup class="verse-num">${i+1}</sup>${verseText(v)}</div>`;
+    row.innerHTML = `<div class="verse-body"><span class="verse-num">${i+1}</span>${verseText(v)}</div>`;
     scroll.appendChild(row);
   });
   requestAnimationFrame(()=>updateVerseUI(false));
