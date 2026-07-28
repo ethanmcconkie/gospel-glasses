@@ -110,34 +110,34 @@ html, body {
 /* ── Volume card grid ── */
 .vol-grid {
   display:grid; grid-template-columns:repeat(3,1fr);
-  gap:8px; overflow-y:auto; flex:1; align-content:flex-start;
+  gap:10px; overflow-y:auto; flex:1; align-content:flex-start;
 }
 .vol-grid::-webkit-scrollbar { display:none; }
 .vol-card {
-  height:130px;
-  background:var(--cover-bg, var(--card));
-  border-radius:10px; border:1.5px solid transparent;
+  height:160px;
+  background:var(--cover-bg, #111);
+  border-radius:8px; border:none;
   display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  padding:14px 10px; text-align:center; cursor:pointer;
-  transition:box-shadow 180ms var(--ease), outline-color 180ms var(--ease);
-  position:relative; overflow:hidden;
+  align-items:center; justify-content:center; gap:10px;
+  padding:16px 10px; text-align:center; cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,0.75);
+  transition:transform 160ms var(--ease), box-shadow 160ms var(--ease);
 }
 .vol-card:focus {
   outline:2px solid var(--cover-fg, var(--accent));
-  outline-offset:-3px;
-  box-shadow:0 4px 24px rgba(0,0,0,0.45);
+  outline-offset:3px;
+  transform:scale(1.05);
+  box-shadow:0 10px 32px rgba(0,0,0,0.9);
 }
-.vol-card.empty { opacity:0.32; pointer-events:none; }
+.vol-card.empty { opacity:0.28; pointer-events:none; }
 .vol-card-name {
-  font-size:10px; font-weight:600; letter-spacing:1.8px;
+  font-size:9px; font-weight:700; letter-spacing:2px;
   text-transform:uppercase;
-  color:var(--cover-fg, var(--ink));
-  line-height:1.5;
-  border-top:1px solid var(--cover-fg, var(--ink));
-  border-bottom:1px solid var(--cover-fg, var(--ink));
-  padding:5px 0; width:80%;
-  opacity:0.88;
+  color:var(--cover-fg, #C9A84C);
+  line-height:1.8;
+  border-top:1px solid var(--cover-fg, #C9A84C);
+  border-bottom:1px solid var(--cover-fg, #C9A84C);
+  padding:5px 0; width:76%;
 }
 
 /* ── Chapter chips ── */
@@ -193,10 +193,21 @@ html, body {
 }
 .verse-row + .verse-row { margin-top:2px; }
 .verse-row.current { border-left-color:var(--accent); background:rgba(79,168,232,0.09); }
-.verse-body { font-size:19px; line-height:1.78; color:var(--ink); }
+.verse-body { font-size:19px; line-height:1.85; color:var(--ink); }
 .verse-num  {
-  font-size:13px; font-weight:700; color:var(--accent);
-  margin-right:3px; opacity:0.75;
+  font-size:inherit; font-weight:700;
+  color:var(--ink); opacity:0.42; margin-right:2px;
+}
+
+/* ── Chapter header in reader ── */
+.chapter-header { text-align:center; padding:6px 10px 22px; }
+.chapter-heading {
+  font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--ink-dim); font-weight:600; margin-bottom:8px;
+}
+.chapter-intro {
+  font-size:13px; font-style:italic;
+  color:var(--ink-dim); line-height:1.55;
 }
 .empty-state {
   padding:40px 0; display:flex; flex-direction:column;
@@ -511,10 +522,19 @@ function renderChapterContent(){
     document.getElementById('bookmarkFlag').classList.remove('on');
     return;
   }
+  const hdr = document.createElement('div');
+  hdr.className = 'chapter-header';
+  if(chapter.title){
+    hdr.innerHTML = `<div class="chapter-intro">${chapter.title}</div>`;
+  } else {
+    hdr.innerHTML = `<div class="chapter-heading">${book.name} · Chapter ${nav.chapterNum}</div>`;
+  }
+  scroll.appendChild(hdr);
+
   chapter.verses.forEach((v,i)=>{
     const row = document.createElement('div');
     row.className = 'verse-row'; row.dataset.idx = i;
-    row.innerHTML = `<div class="verse-body"><span class="verse-num">${i+1}</span>${verseText(v)}</div>`;
+    row.innerHTML = `<div class="verse-body"><span class="verse-num">${i+1}</span> ${verseText(v)}</div>`;
     scroll.appendChild(row);
   });
   requestAnimationFrame(()=>updateVerseUI(false));
