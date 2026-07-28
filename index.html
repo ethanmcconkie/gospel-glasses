@@ -11,18 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
 <title>Bookshelf</title>
 <style>
 :root {
   --bg:      #000;
   --card:    rgba(255,255,255,0.055);
-  --card-hi: rgba(201,168,76,0.11);
-  --ink:     #F5F0E8;
-  --ink-dim: rgba(245,240,232,0.44);
+  --card-hi: rgba(201,168,76,0.10);
+  --ink:     #F0EBE0;
+  --ink-dim: rgba(240,235,224,0.42);
   --gold:    #C9A84C;
-  --gold-b:  rgba(201,168,76,0.5);
+  --gold-b:  rgba(201,168,76,0.48);
   --divider: rgba(255,255,255,0.07);
-  --scrim:   rgba(0,0,0,0.93);
+  --scrim:   rgba(0,0,0,0.94);
   --font:    'Noto Serif', Georgia, serif;
   --ease:    cubic-bezier(0.4,0,0.2,1);
 }
@@ -49,19 +50,24 @@ html, body {
 }
 
 /* ── Boot ── */
-#boot { justify-content:center; align-items:center; gap:18px; }
-.spinner { position:relative; width:48px; height:48px; }
-.spinner-track { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(201,168,76,0.13); }
+#boot { justify-content:center; align-items:center; gap:12px; }
+.boot-icon { width:76px; height:76px; border-radius:18px; }
+.boot-rule { width:28px; height:0.5px; background:var(--gold); opacity:0.45; }
+.boot-wordmark {
+  font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;
+  color:var(--ink); opacity:0.85;
+}
+.boot-status { font-size:11px; color:var(--ink-dim); margin-top:4px; }
+.boot-error  { font-size:12px; color:#FF7B7B; max-width:440px; text-align:center; }
+.spinner { position:relative; width:22px; height:22px; margin-top:4px; }
+.spinner-track { position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(201,168,76,0.15); }
 @keyframes arc-spin { to { transform:rotate(360deg); } }
 .spinner-arc {
   position:absolute; inset:0; border-radius:50%;
-  border:2px solid transparent;
-  border-top-color:var(--gold); border-right-color:rgba(201,168,76,0.3);
-  animation:arc-spin 1s var(--ease) infinite;
+  border:1.5px solid transparent;
+  border-top-color:var(--gold); border-right-color:rgba(201,168,76,0.28);
+  animation:arc-spin 0.9s linear infinite;
 }
-.boot-wordmark { font-size:18px; font-weight:600; color:var(--ink); letter-spacing:0.5px; }
-.boot-status   { font-size:12px; color:var(--ink-dim); }
-.boot-error    { font-size:12px; color:#FF7B7B; max-width:440px; text-align:center; }
 
 /* ── Back button ── */
 .back-btn {
@@ -112,52 +118,55 @@ html, body {
 /* ── Volume card grid ── */
 .vol-grid {
   display:grid; grid-template-columns:repeat(3,1fr);
-  gap:10px; overflow-y:auto; flex:1; align-content:flex-start;
+  gap:16px 10px; overflow-y:auto; flex:1; align-content:flex-start;
 }
 .vol-grid::-webkit-scrollbar { display:none; }
-.vol-card {
-  height:168px;
-  background:var(--cover-bg, #0B1120);
-  border-radius:9px;
-  display:flex; align-items:center; justify-content:center;
-  padding:18px 10px; text-align:center; cursor:pointer;
+
+.vol-wrap { display:flex; flex-direction:column; gap:7px; cursor:pointer; }
+.vol-wrap:focus { outline:none; }
+.vol-wrap.empty { opacity:0.22; pointer-events:none; }
+.vol-wrap:focus .vol-card {
+  transform:scale(1.04) translateY(-2px);
   box-shadow:
-    0 2px 4px rgba(0,0,0,0.5),
-    0 8px 24px rgba(0,0,0,0.75),
-    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 4px 10px rgba(0,0,0,0.65),
+    0 18px 44px rgba(0,0,0,0.88),
+    0 0 0 1.5px var(--cover-fg, var(--gold));
+}
+.vol-wrap:focus .vol-label { color:var(--ink); }
+
+.vol-card {
+  height:190px;
+  background:var(--cover-bg, #0C0C10);
+  border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  padding:22px 12px; text-align:center;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.45),
+    0 8px 20px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.055),
     inset 0 -1px 0 rgba(0,0,0,0.4);
   transition:transform 180ms var(--ease), box-shadow 180ms var(--ease);
   position:relative; overflow:hidden;
 }
-/* subtle sheen — light source from top-left */
 .vol-card::before {
-  content:''; position:absolute; inset:0;
-  background:linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 48%);
-  pointer-events:none;
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,0.055) 0%, transparent 45%);
 }
-/* left spine shadow */
 .vol-card::after {
-  content:''; position:absolute; left:0; top:0; bottom:0; width:6px;
-  background:linear-gradient(to right, rgba(0,0,0,0.35), transparent);
-  pointer-events:none;
+  content:''; position:absolute; left:0; top:0; bottom:0; width:7px; pointer-events:none;
+  background:linear-gradient(to right, rgba(0,0,0,0.28), transparent);
 }
-.vol-card:focus {
-  outline:none;
-  transform:scale(1.05) translateY(-2px);
-  box-shadow:
-    0 4px 8px rgba(0,0,0,0.6),
-    0 16px 40px rgba(0,0,0,0.85),
-    0 0 0 1.5px var(--cover-fg, var(--gold)),
-    inset 0 1px 0 rgba(255,255,255,0.1);
-}
-.vol-card.empty { opacity:0.25; pointer-events:none; }
 .vol-card-name {
-  font-size:9px; font-weight:700; letter-spacing:2.2px;
-  text-transform:uppercase; line-height:1.95;
+  font-size:9px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; line-height:2;
   color:var(--cover-fg, #C9A84C);
   border-top:0.5px solid var(--cover-fg, #C9A84C);
   border-bottom:0.5px solid var(--cover-fg, #C9A84C);
-  padding:6px 0; width:72%; position:relative; z-index:1;
+  padding:6px 0; width:68%; position:relative; z-index:1;
+}
+.vol-label {
+  font-size:11px; color:var(--ink-dim); text-align:center;
+  line-height:1.3; transition:color 160ms var(--ease);
 }
 
 /* ── Chapter chips ── */
@@ -254,8 +263,10 @@ html, body {
 
   <!-- BOOT -->
   <section class="screen active" id="boot">
-    <div class="spinner"><div class="spinner-track"></div><div class="spinner-arc"></div></div>
+    <img class="boot-icon" src="icon.svg" alt="">
+    <div class="boot-rule"></div>
     <div class="boot-wordmark">Bookshelf</div>
+    <div class="spinner"><div class="spinner-track"></div><div class="spinner-arc"></div></div>
     <div class="boot-status" id="bootStatus">Loading library…</div>
   </section>
 
@@ -429,16 +440,16 @@ function renderHome(){
   document.getElementById('homeRecents').onclick = ()=>{ renderRecents(); showScreen('recents'); };
 }
 
-/* ── Vol cover palette (keyed by vol.id) ── */
+/* ── Vol cover palette ── */
 const VOL_COVERS = {
-  'ot':     { bg:'#0D1117', fg:'#C9A84C' },
-  'nt':     { bg:'#162038', fg:'#C9A84C' },
-  'bom':    { bg:'#0D2035', fg:'#C9A84C' },
-  'dc':     { bg:'#0F2820', fg:'#8FC48A' },
-  'pgp':    { bg:'#1F1030', fg:'#C9A84C' },
-  'bd':     { bg:'#1A1A28', fg:'#A8ACBC' },
-  'gts':    { bg:'#0E2218', fg:'#9FC9A4' },
-  'family': { bg:'#2A1010', fg:'#C9A84C' },
+  'ot':     { bg:'#0C0C10', fg:'#C9A84C' },
+  'nt':     { bg:'#0C0C10', fg:'#C9A84C' },
+  'bom':    { bg:'#152448', fg:'#C9A84C' },
+  'dc':     { bg:'#0C0C10', fg:'#C9A84C' },
+  'pgp':    { bg:'#0C0C10', fg:'#C9A84C' },
+  'bd':     { bg:'#0C0C10', fg:'#C9A84C' },
+  'gts':    { bg:'#0C0C10', fg:'#C9A84C' },
+  'family': { bg:'#0C0C10', fg:'#C9A84C' },
 };
 
 /* ── Library ── */
@@ -446,18 +457,28 @@ function renderLibrary(){
   const grid = document.getElementById('volGrid');
   grid.innerHTML = '';
   SCRIPTURES.volumes.forEach(v=>{
-    const cover = VOL_COVERS[v.id] || { bg:'#111', fg:'#C9A84C' };
+    const cover = VOL_COVERS[v.id] || { bg:'#0C0C10', fg:'#C9A84C' };
+    const wrap = document.createElement('div');
+    wrap.className = 'vol-wrap focusable' + (v.books.length===0?' empty':'');
+    wrap.tabIndex = 0;
+
     const card = document.createElement('div');
-    card.className = 'vol-card focusable' + (v.books.length===0?' empty':'');
-    card.tabIndex = 0;
+    card.className = 'vol-card';
     card.style.setProperty('--cover-bg', cover.bg);
     card.style.setProperty('--cover-fg', cover.fg);
     card.innerHTML = `<div class="vol-card-name">${v.name}</div>`;
-    card.addEventListener('click',()=>{
+
+    const lbl = document.createElement('div');
+    lbl.className = 'vol-label';
+    lbl.textContent = v.name;
+
+    wrap.appendChild(card);
+    wrap.appendChild(lbl);
+    wrap.addEventListener('click', ()=>{
       if(!v.books.length) return;
       nav.volumeId = v.id; renderBooks(); showScreen('books');
     });
-    grid.appendChild(card);
+    grid.appendChild(wrap);
   });
 }
 

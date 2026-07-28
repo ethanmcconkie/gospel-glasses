@@ -1,0 +1,12 @@
+{
+  "name": "Bookshelf",
+  "short_name": "Bookshelf",
+  "description": "Scripture Library for Meta Ray-Ban Display",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#000000"
+}
