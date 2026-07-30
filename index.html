@@ -70,115 +70,144 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
-   BOOT SCREEN — Cinematic sacred ripple
+   BOOT SCREEN — Book flipping pages
 ═══════════════════════════════════════ */
 #boot {
   justify-content:center; align-items:center;
-  gap:0; padding:0;
-  background:#000;
+  gap:44px; padding:0;
 }
-
 .boot-status { display:none; }
-
 .boot-error {
   font-size:12px; color:#FF7B7B;
-  max-width:440px; text-align:center;
-  line-height:1.6; letter-spacing:0.2px;
+  max-width:440px; text-align:center; line-height:1.6;
 }
 
-/* ── Ripple animation container ── */
-.boot-ripple-wrap {
-  position:relative;
-  width:260px; height:260px;
-  display:flex; align-items:center; justify-content:center;
+/* ── 3-D book scene ── */
+.book-scene {
+  perspective:740px;
+  perspective-origin:50% 36%;
+}
+.book-wrap {
+  position:relative; width:240px; height:158px;
+  transform:rotateX(32deg) rotateY(-6deg);
+  transform-style:preserve-3d;
 }
 
-/* Concentric ring ripples */
-.boot-ring {
-  position:absolute;
-  border-radius:50%;
-  border:1px solid rgba(201,168,76,0.0);
-  animation:bootRipple 3.6s var(--ease-out) infinite;
+/* Left cover — read side, navy */
+.book-left {
+  position:absolute; left:0; top:0; width:112px; height:158px;
+  background:linear-gradient(to right,#03060D 0%,#091422 60%,#101E30 100%);
+  border-radius:5px 0 0 5px; z-index:20;
 }
-.boot-ring:nth-child(1) { width:60px;  height:60px;  animation-delay:0s;    border-color:rgba(201,168,76,0.72); }
-.boot-ring:nth-child(2) { width:60px;  height:60px;  animation-delay:0.72s; border-color:rgba(201,168,76,0.60); }
-.boot-ring:nth-child(3) { width:60px;  height:60px;  animation-delay:1.44s; border-color:rgba(201,168,76,0.48); }
-.boot-ring:nth-child(4) { width:60px;  height:60px;  animation-delay:2.16s; border-color:rgba(201,168,76,0.32); }
-.boot-ring:nth-child(5) { width:60px;  height:60px;  animation-delay:2.88s; border-color:rgba(201,168,76,0.18); }
-
-@keyframes bootRipple {
-  0%   { transform:scale(1);   opacity:1; }
-  100% { transform:scale(4.2); opacity:0; }
+.book-left::after {
+  content:''; position:absolute;
+  top:20px; bottom:20px; right:0; width:1px;
+  background:linear-gradient(to bottom,transparent,rgba(201,168,76,0.32) 28%,rgba(201,168,76,0.32) 72%,transparent);
 }
 
-/* Central radial light bloom */
-.boot-core {
-  position:relative; z-index:10;
-  width:60px; height:60px;
-  border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  /* soft gold candlelight bloom */
-  background:radial-gradient(circle at 50% 50%,
-    rgba(201,168,76,0.22) 0%,
-    rgba(201,168,76,0.10) 40%,
-    rgba(201,168,76,0.03) 70%,
-    transparent 100%
+/* Spine */
+.book-spine {
+  position:absolute; left:112px; top:0; width:16px; height:158px;
+  background:linear-gradient(to right,#020406 0%,#050A12 42%,#020406 100%);
+  z-index:30;
+}
+.book-spine::after {
+  content:''; position:absolute;
+  top:16px; bottom:16px; left:50%; width:1px;
+  transform:translateX(-50%);
+  background:linear-gradient(to bottom,transparent,var(--gold) 24%,var(--gold) 76%,transparent);
+  opacity:0.40;
+}
+
+/* Right cover — unread side, cream paper */
+.book-right {
+  position:absolute; right:0; top:0; width:112px; height:158px;
+  background:linear-gradient(to left,#D4D0C4 0%,#ECEADF 55%,#F2EFE7 100%);
+  border-radius:0 5px 5px 0; z-index:1;
+}
+/* subtle page-edge lines on unread stack */
+.book-right::before {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 9px,
+    rgba(0,0,0,0.032) 9px, rgba(0,0,0,0.032) 10px
   );
-  animation:bootCorePulse 3.6s ease-in-out infinite;
-}
-@keyframes bootCorePulse {
-  0%,100% { opacity:0.7; transform:scale(1.0); }
-  50%      { opacity:1.0; transform:scale(1.08); }
+  border-radius:0 5px 5px 0;
 }
 
-/* SVG cross drawn with stroke-dashoffset animation */
-.boot-cross-svg {
-  width:36px; height:36px;
-  overflow:visible;
+/* Flipping page */
+.book-page {
+  position:absolute; left:128px; top:3px;
+  width:106px; height:152px;
+  transform-origin:left center;
+  transform-style:preserve-3d;
+  animation:pgFlip 2.4s cubic-bezier(0.42,0,0.28,1) infinite;
+  animation-delay:calc(var(--n) * 0.48s);
+  z-index:15;
 }
-.boot-cross-path {
-  fill:none;
-  stroke:var(--gold);
-  stroke-width:1.5;
-  stroke-linecap:round;
-  stroke-dasharray:96;
-  stroke-dashoffset:96;
-  animation:bootDrawCross 1.2s var(--ease-out) 0.3s forwards;
-  filter:drop-shadow(0 0 6px rgba(201,168,76,0.55));
+.pg-f, .pg-b { position:absolute; inset:0; }
+
+/* Front face — cream, with line texture */
+.pg-f {
+  background:linear-gradient(to right,#C4C0B2 0%,#E6E3D8 32%,#F0EDE5 100%);
+  border-radius:0 4px 4px 0;
+  backface-visibility:hidden;
 }
-@keyframes bootDrawCross {
-  0%   { stroke-dashoffset:96; opacity:0.4; }
-  100% { stroke-dashoffset:0;  opacity:1.0; }
+.pg-f::after {
+  content:''; position:absolute;
+  left:14px; right:12px; top:20px; bottom:20px;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(28,20,6,0.065) 0, rgba(28,20,6,0.065) 1px,
+    transparent 1px, transparent 9px
+  );
+}
+/* shadow as page lifts */
+.pg-f::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(to right,rgba(0,0,0,0.12) 0%,transparent 20%);
+  border-radius:0 4px 4px 0;
 }
 
-/* ── Wordmark beneath the ripple ── */
+/* Back face — navy inside */
+.pg-b {
+  background:linear-gradient(to left,#060910 0%,#0C1828 100%);
+  border-radius:4px 0 0 4px;
+  backface-visibility:hidden;
+  transform:rotateY(180deg);
+}
+
+@keyframes pgFlip {
+  0%   { transform:rotateY(0deg); }
+  38%  { transform:rotateY(-180deg); }
+  100% { transform:rotateY(-180deg); }
+}
+
+/* ── Wordmark ── */
 .boot-wordmark-wrap {
   display:flex; flex-direction:column;
-  align-items:center; gap:12px;
-  margin-top:8px;
-  animation:bootWordmarkFade 1.4s var(--ease-out) 1.0s both;
+  align-items:center; gap:10px;
+  animation:bootWmFade 1.6s var(--ease-out) 0.7s both;
 }
-@keyframes bootWordmarkFade {
-  from { opacity:0; transform:translateY(8px); }
+@keyframes bootWmFade {
+  from { opacity:0; transform:translateY(7px); }
   to   { opacity:1; transform:translateY(0); }
 }
-
 .boot-wordmark-rule {
-  width:64px; height:1px;
-  background:linear-gradient(to right, transparent, var(--gold), transparent);
-  opacity:0.65;
+  width:56px; height:1px;
+  background:linear-gradient(to right,transparent,var(--gold),transparent);
+  opacity:0.55;
 }
-
 .boot-wordmark {
-  font-family:var(--font); font-size:20px; font-weight:400;
-  letter-spacing:11px; text-transform:uppercase; text-indent:11px;
-  color:var(--gold); opacity:0.90;
+  font-family:var(--font); font-size:19px; font-weight:400;
+  letter-spacing:10px; text-transform:uppercase; text-indent:10px;
+  color:var(--gold); opacity:0.88;
 }
-
 .boot-wordmark-sub {
   font-size:8px; letter-spacing:4px; text-transform:uppercase;
-  color:var(--ink-dim); opacity:0.55; text-indent:4px;
-  margin-top:-4px;
+  color:var(--ink-dim); opacity:0.50; text-indent:4px;
+  margin-top:-2px;
 }
 
 /* ═══════════════════════════════════════
@@ -774,21 +803,16 @@ html, body {
 
   <!-- BOOT -->
   <section class="screen active" id="boot">
-    <div class="boot-ripple-wrap">
-      <!-- Concentric ripple rings — animate outward from center -->
-      <div class="boot-ring"></div>
-      <div class="boot-ring"></div>
-      <div class="boot-ring"></div>
-      <div class="boot-ring"></div>
-      <div class="boot-ring"></div>
-      <!-- Central glow core with drawn cross -->
-      <div class="boot-core">
-        <svg class="boot-cross-svg" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-          <!-- Vertical bar then horizontal bar as single path for draw effect -->
-          <path class="boot-cross-path"
-            d="M18,6 L18,30 M6,18 L30,18"
-          />
-        </svg>
+    <div class="book-scene">
+      <div class="book-wrap">
+        <div class="book-left"></div>
+        <div class="book-spine"></div>
+        <div class="book-right"></div>
+        <div class="book-page" style="--n:0"><div class="pg-f"></div><div class="pg-b"></div></div>
+        <div class="book-page" style="--n:1"><div class="pg-f"></div><div class="pg-b"></div></div>
+        <div class="book-page" style="--n:2"><div class="pg-f"></div><div class="pg-b"></div></div>
+        <div class="book-page" style="--n:3"><div class="pg-f"></div><div class="pg-b"></div></div>
+        <div class="book-page" style="--n:4"><div class="pg-f"></div><div class="pg-b"></div></div>
       </div>
     </div>
     <div class="boot-wordmark-wrap">
