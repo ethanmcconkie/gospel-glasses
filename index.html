@@ -598,41 +598,35 @@ html, body {
 .chapter-scroll::-webkit-scrollbar { display:none; }
 
 /* ═══════════════════════════════════════
-   Chapter header — printed book opening
+   Chapter header — Gospel Library style
 ═══════════════════════════════════════ */
 .chapter-header {
   text-align:center;
-  padding:24px 8px 34px;
+  padding:20px 8px 24px;
   display:flex; flex-direction:column;
-  align-items:center; gap:8px;
+  align-items:center; gap:4px;
 }
 
-/* Book name in small caps / spaced uppercase */
+/* Book name — small, spaced, dim */
 .chapter-book-name {
-  font-size:9px; letter-spacing:4px;
-  text-transform:uppercase;
-  color:var(--ink-dim); font-weight:400;
-}
-
-/* Large centered chapter number */
-.chapter-number-large {
-  font-size:42px; font-weight:600;
-  color:var(--ink); line-height:1;
-  letter-spacing:-1px;
-}
-
-/* thin gold flanking rule */
-.chapter-heading {
   font-size:9px; letter-spacing:3.5px;
   text-transform:uppercase;
-  color:var(--ink-dim); font-weight:400;
-  display:flex; align-items:center; gap:12px;
+  color:var(--gold); opacity:0.6; font-weight:400;
 }
-.chapter-heading::before,
-.chapter-heading::after {
-  content:''; display:block;
-  width:28px; height:1px;
-  background:var(--gold); opacity:0.45;
+
+/* Chapter number — clean serif heading, not giant */
+.chapter-number-large {
+  font-size:23px; font-weight:600;
+  color:var(--ink); line-height:1.15;
+  letter-spacing:-0.3px;
+}
+
+/* Thin gold rule below the heading number */
+.chapter-heading {
+  margin-top:6px;
+  width:36px; height:1px;
+  background:linear-gradient(to right, transparent, var(--gold), transparent);
+  opacity:0.5;
 }
 
 .chapter-intro {
@@ -641,10 +635,10 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
-   Verse rows — maximum readability
+   Verse rows — Gospel Library feel
 ═══════════════════════════════════════ */
 .verse-row {
-  padding:5px 8px 5px 16px;
+  padding:4px 8px 4px 14px;
   border-left:2px solid transparent;
   border-radius:0 8px 8px 0;
   transition:
@@ -659,18 +653,19 @@ html, body {
 }
 
 .verse-body {
-  font-size:20px; line-height:2.0;
-  color:var(--ink); font-weight:400;
+  font-size:17px; line-height:1.78;
+  color:#F0EBE0; font-weight:400;
+  font-family:'Noto Serif', Georgia, serif;
 }
 
-/* Tiny gold superscript verse numbers — like printed scripture */
+/* Tiny gold superscript verse numbers — inline, subtle */
 .verse-num {
-  font-size:9px; font-weight:600;
-  color:var(--gold); opacity:0.7;
+  font-size:10px; font-weight:400;
+  color:var(--gold); opacity:0.55;
   vertical-align:super;
   line-height:0;
-  margin-right:2px;
-  letter-spacing:0.2px;
+  margin-right:1px;
+  letter-spacing:0.1px;
 }
 
 .empty-state {
@@ -1154,7 +1149,7 @@ function renderChapterContent(){
     hdr.innerHTML = `
       <div class="chapter-book-name">${book.name}</div>
       <div class="chapter-number-large">${nav.chapterNum}</div>
-      <div class="chapter-heading">Chapter</div>
+      <div class="chapter-heading"></div>
     `;
   }
   scroll.appendChild(hdr);
