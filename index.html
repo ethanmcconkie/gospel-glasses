@@ -682,32 +682,50 @@ html, body {
 ═══════════════════════════════════════ */
 #menu {
   position:absolute; inset:0; display:none;
-  background:var(--scrim);
-  backdrop-filter:blur(40px) saturate(0.6);
-  -webkit-backdrop-filter:blur(40px) saturate(0.6);
+  background:rgba(0,0,0,0.88);
+  backdrop-filter:blur(48px) saturate(0.5);
+  -webkit-backdrop-filter:blur(48px) saturate(0.5);
   flex-direction:column;
   justify-content:center;
-  padding:0 48px;
+  padding:0 40px;
 }
 #menu.active { display:flex; }
 
 .menu-inner {
-  border-radius:16px; overflow:hidden;
-  border:1px solid rgba(255,255,255,0.08);
-  background:rgba(14,12,8,0.72);
+  border-radius:18px; overflow:hidden;
+  border:1px solid rgba(201,168,76,0.14);
+  background:rgba(10,9,6,0.82);
   box-shadow:
-    0 2px 4px rgba(0,0,0,0.4),
-    0 12px 36px rgba(0,0,0,0.72),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    0 0 0 1px rgba(0,0,0,0.5),
+    0 20px 60px rgba(0,0,0,0.9),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.menu-header {
+  padding:20px 24px 16px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.menu-header-ref {
+  font-family:var(--font); font-size:16px; font-weight:600;
+  color:var(--ink); letter-spacing:-0.2px;
+}
+.menu-header-sub {
+  font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--gold); opacity:0.55;
+}
+.menu-divider {
+  height:1px;
+  background:linear-gradient(to right, transparent, rgba(201,168,76,0.2) 20%, rgba(201,168,76,0.2) 80%, transparent);
+  margin:0 24px;
 }
 
 .menu-btn {
-  min-height:54px; width:100%;
-  display:flex; align-items:center; gap:18px;
+  min-height:52px; width:100%;
+  display:flex; align-items:center; gap:16px;
   padding:0 24px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
+  border-top:1px solid rgba(255,255,255,0.04);
   font-family:var(--font); font-size:15px;
-  font-weight:400; letter-spacing:0.2px;
+  font-weight:400; letter-spacing:0.1px;
   color:var(--ink-mid);
   background:transparent;
   transition:
@@ -715,18 +733,18 @@ html, body {
     color 160ms var(--ease);
   cursor:pointer;
 }
-.menu-btn:last-child { border-bottom:none; }
+.menu-btn:first-of-type { border-top:none; margin-top:8px; }
 .menu-btn:focus {
   outline:none;
-  background:rgba(201,168,76,0.09);
+  background:rgba(201,168,76,0.08);
   color:var(--ink);
 }
 .menu-btn:focus .menu-icon { color:var(--gold); opacity:1; }
 
 .menu-icon {
-  font-size:13px; width:18px;
+  font-size:14px; width:20px;
   text-align:center;
-  color:var(--gold); opacity:0.6;
+  color:var(--gold); opacity:0.5;
   transition:opacity 160ms var(--ease);
   flex-shrink:0;
 }
@@ -838,8 +856,8 @@ html, body {
 
   <!-- HOME -->
   <section class="screen" id="home">
-    <div class="home-label">The Standard Works</div>
-    <div class="home-title">Scriptures</div>
+    <div class="home-label">Scripture Library</div>
+    <div class="home-title">Library</div>
     <div class="card-list">
       <div class="card-row focusable" id="homeLibrary" tabindex="0">
         <div class="label">Library</div><div class="chev">›</div>
@@ -891,7 +909,7 @@ html, body {
     <div class="reader-header">
       <div class="ref-tag" id="refTag">—</div>
       <div class="verse-counter" id="verseCounter"></div>
-      <div class="bookmark-flag" id="bookmarkFlag">♥</div>
+      <div class="bookmark-flag" id="bookmarkFlag">◇</div>
     </div>
     <div class="chapter-scroll" id="chapterScroll"></div>
   </section>
@@ -899,10 +917,15 @@ html, body {
   <!-- MENU -->
   <div id="menu">
     <div class="menu-inner">
-      <button class="menu-btn focusable" data-action="resume"><span class="menu-icon">▶</span>Resume reading</button>
-      <button class="menu-btn focusable" data-action="bookmark"><span class="menu-icon">♥</span><span id="bookmarkLabel">Bookmark this verse</span></button>
-      <button class="menu-btn focusable" data-action="chapters"><span class="menu-icon">≡</span>Jump to chapter</button>
-      <button class="menu-btn focusable" data-action="home"><span class="menu-icon">⌂</span>Back to Home</button>
+      <div class="menu-header">
+        <div class="menu-header-ref" id="menuRef">—</div>
+        <div class="menu-header-sub">Reading</div>
+      </div>
+      <div class="menu-divider"></div>
+      <button class="menu-btn focusable" data-action="resume"><span class="menu-icon">↩</span>Continue reading</button>
+      <button class="menu-btn focusable" data-action="bookmark"><span class="menu-icon">◇</span><span id="bookmarkLabel">Bookmark verse</span></button>
+      <button class="menu-btn focusable" data-action="chapters"><span class="menu-icon">≡</span>Chapter list</button>
+      <button class="menu-btn focusable" data-action="home"><span class="menu-icon">◁</span>Home</button>
     </div>
   </div>
 
@@ -1175,8 +1198,10 @@ function updateVerseUI(smooth){
 }
 function renderBookmarkFlag(){
   const on = isBookmarked();
-  document.getElementById('bookmarkFlag').classList.toggle('on', on);
-  document.getElementById('bookmarkLabel').textContent = on?'Remove bookmark':'Bookmark this verse';
+  const flag = document.getElementById('bookmarkFlag');
+  flag.classList.toggle('on', on);
+  flag.textContent = on ? '◆' : '◇';
+  document.getElementById('bookmarkLabel').textContent = on?'Remove bookmark':'Bookmark verse';
 }
 function stepVerse(d){
   const ch = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
@@ -1197,8 +1222,11 @@ function visibleMenuBtns(){ return Array.from(document.querySelectorAll('#menu .
 function openMenu(){
   menuOpen = true;
   const ch = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
+  const book = getBook(nav.volumeId, nav.bookId);
   const bBtn = document.querySelector('.menu-btn[data-action="bookmark"]');
   bBtn.style.display = ch.verses.length===0?'none':'flex';
+  const ref = ch.title ? ch.title : book.name + ' ' + nav.chapterNum;
+  document.getElementById('menuRef').textContent = ref;
   document.getElementById('menu').classList.add('active');
   const first = visibleMenuBtns()[0]; if(first) first.focus();
 }
