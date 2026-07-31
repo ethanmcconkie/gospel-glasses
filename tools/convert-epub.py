@@ -27,6 +27,37 @@ except ImportError:
     sys.exit("Missing dependency. Run: pip install beautifulsoup4 lxml")
 
 COLLECTIONS = {
+    "ot": {
+        "dir": "bible",
+        "vol_id": "ot",
+        "vol_name": "Old Testament",
+        "books": [
+            ("gen", "Genesis"), ("ex", "Exodus"), ("lev", "Leviticus"), ("num", "Numbers"),
+            ("deut", "Deuteronomy"), ("josh", "Joshua"), ("judg", "Judges"), ("ruth", "Ruth"),
+            ("1-sam", "1 Samuel"), ("2-sam", "2 Samuel"), ("1-kgs", "1 Kings"), ("2-kgs", "2 Kings"),
+            ("1-chr", "1 Chronicles"), ("2-chr", "2 Chronicles"), ("ezra", "Ezra"), ("neh", "Nehemiah"),
+            ("esth", "Esther"), ("job", "Job"), ("ps", "Psalms"), ("prov", "Proverbs"),
+            ("eccl", "Ecclesiastes"), ("song", "Song of Solomon"), ("isa", "Isaiah"), ("jer", "Jeremiah"),
+            ("lam", "Lamentations"), ("ezek", "Ezekiel"), ("dan", "Daniel"), ("hosea", "Hosea"),
+            ("joel", "Joel"), ("amos", "Amos"), ("obad", "Obadiah"), ("jonah", "Jonah"),
+            ("micah", "Micah"), ("nahum", "Nahum"), ("hab", "Habakkuk"), ("zeph", "Zephaniah"),
+            ("hag", "Haggai"), ("zech", "Zechariah"), ("mal", "Malachi"),
+        ],
+    },
+    "nt": {
+        "dir": "bible",
+        "vol_id": "nt",
+        "vol_name": "New Testament",
+        "books": [
+            ("matt", "Matthew"), ("mark", "Mark"), ("luke", "Luke"), ("john", "John"),
+            ("acts", "Acts"), ("rom", "Romans"), ("1-cor", "1 Corinthians"), ("2-cor", "2 Corinthians"),
+            ("gal", "Galatians"), ("eph", "Ephesians"), ("philip", "Philippians"), ("col", "Colossians"),
+            ("1-thes", "1 Thessalonians"), ("2-thes", "2 Thessalonians"), ("1-tim", "1 Timothy"),
+            ("2-tim", "2 Timothy"), ("titus", "Titus"), ("philem", "Philemon"), ("heb", "Hebrews"),
+            ("james", "James"), ("1-pet", "1 Peter"), ("2-pet", "2 Peter"), ("1-jn", "1 John"),
+            ("2-jn", "2 John"), ("3-jn", "3 John"), ("jude", "Jude"), ("rev", "Revelation"),
+        ],
+    },
     "bofm": {
         "dir": "bofm",
         "vol_id": "bom",
@@ -69,9 +100,15 @@ def load_xhtml(path):
 
 
 def parse_chapter_verses(path):
-    """Returns a list of verse strings, in order, for one chapter file."""
+    """Returns (heading, verses) for one chapter file.
+    heading = the italic chapter summary paragraph(s) that precede verse 1
+    (present in the official Standard Works epub), or None."""
     soup = BeautifulSoup(load_xhtml(path), "lxml")
     verses = []
+    # In the official Standard Works epub each chapter file is:
+    #   <h1>book name</h1> <h2>Chapter N</h2> <h3>italic chapter summary</h3> <p>verses...</p>
+    h3 = soup.find("h3")
+    heading = re.sub(r"\s+", " ", h3.get_text(" ", strip=True)) if h3 else None
     for p in soup.find_all("p"):
         spans = p.find_all("span", recursive=False)
         if (
@@ -84,7 +121,7 @@ def parse_chapter_verses(path):
             text = re.sub(r"\s+", " ", p.get_text(" ", strip=True))
             verses.append((num, text))
     verses.sort(key=lambda x: x[0])
-    return [t for _, t in verses]
+    return heading or None, [t for _, t in verses]
 
 
 def slug(name):
@@ -105,9 +142,12 @@ def build_volume(text_dir, book_list, vol_id, vol_name):
             if not m:
                 continue  # e.g. introduction/toc files without a chapter number
             chap_num = int(m.group(1))
-            verses = parse_chapter_verses(fpath)
+            heading, verses = parse_chapter_verses(fpath)
             if verses:
-                chapters.append({"num": chap_num, "verses": verses})
+                entry = {"num": chap_num, "verses": verses}
+                if heading:
+                    entry["heading"] = heading
+                chapters.append(entry)
         chapters.sort(key=lambda c: c["num"])
         if chapters:
             books.append({"id": slug(name), "name": name, "chapters": chapters})
