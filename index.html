@@ -190,13 +190,23 @@ html, body {
   width: 92px; height: 132px;
   flex-shrink: 0;
   border-radius: var(--r-cover);
-  display: flex; align-items: flex-end; justify-content: center;
-  padding: 10px 8px;
-  background-image: linear-gradient(170deg, rgba(255,255,255,0.14), rgba(255,255,255,0) 45%, rgba(0,0,0,0.22));
+  overflow: hidden;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 25% 6% 0;
 }
-.hero-cover span {
-  font-size: 10.5px; text-align: center; line-height: 1.4;
-  color: rgba(240,235,224,0.92);
+.hero-cover-title {
+  flex: 0 0 auto;
+  width: 76%;
+  font-family: var(--font-scripture);
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #D9B678;
+  border-top: 1px solid #D9B678;
+  border-bottom: 1px solid #D9B678;
+  padding: 3px 0;
 }
 .hero-info { flex: 1; min-width: 0; }
 .hero-kicker { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }
@@ -811,9 +821,10 @@ function renderHome(){
     const ch = getChapter(r.volumeId, r.bookId, r.chapterNum);
     const total = (ch && ch.verses.length) || 1;
     const pct = Math.min(100, Math.round(((r.verseIdx+1)/total)*100));
-    const cov = VOL_COVERS[r.volumeId] || { bg:'#22242B' };
+    const cov = VOL_COVERS[r.volumeId] || { bg:'#22242B', lines:[r.volumeName] };
+    const heroTitleHtml = (cov.lines || [r.volumeName]).join('<br>');
     hero.innerHTML = `
-      <div class="hero-cover" style="background:${cov.bg}"><span>${r.volumeName}</span></div>
+      <div class="hero-cover" style="background:${cov.bg}"><div class="hero-cover-title">${heroTitleHtml}</div></div>
       <div class="hero-info">
         <div class="hero-kicker">Continue reading</div>
         <div class="hero-title">${r.label}</div>
@@ -837,11 +848,11 @@ function renderHome(){
   const rest = rec.slice(1,4);
   lbl.style.display = rest.length ? '' : 'none';
   rest.forEach(r=>{
-    const cov = VOL_COVERS[r.volumeId] || { bg:'#666' };
+    const cov = VOL_COVERS[r.volumeId] || { dot:'#666' };
     const c = document.createElement('button');
     c.className = 'rchip focusable';
     c.tabIndex = 0;
-    c.innerHTML = `<span class="rchip-dot" style="background:${cov.bg}"></span>${r.label}`;
+    c.innerHTML = `<span class="rchip-dot" style="background:${cov.dot||cov.bg}"></span>${r.label}`;
     c.onclick = ()=>{ nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader(); };
     chips.appendChild(c);
   });
@@ -849,14 +860,14 @@ function renderHome(){
 
 /* ── Vol cover palette ── */
 const VOL_COVERS = {
-  'ot':     { bg:'#000000', fg:'#F0EBE0', lines:['Old','Testament'] },
-  'nt':     { bg:'#000000', fg:'#F0EBE0', lines:['New','Testament'] },
-  'bom':    { bg:'#1B3A5C', fg:'#F0EBE0', lines:['The','Book','of','Mormon'] },
-  'dc':     { bg:'#000000', fg:'#F0EBE0', lines:['Doctrine','and','Covenants'] },
-  'pgp':    { bg:'#000000', fg:'#F0EBE0', lines:['Pearl of','Great Price'] },
-  'bd':     { bg:'#000000', fg:'#F0EBE0', lines:['Bible','Dictionary'] },
-  'gts':    { bg:'#000000', fg:'#F0EBE0', lines:['Guide to the','Scriptures'] },
-  'family': { bg:'#000000', fg:'#F0EBE0', lines:['Family','Library'] },
+  'ot':     { bg:'#000000', fg:'#F0EBE0', lines:['Old','Testament'],            dot:'#7A3040' },
+  'nt':     { bg:'#000000', fg:'#F0EBE0', lines:['New','Testament'],            dot:'#2A6048' },
+  'bom':    { bg:'#1B3A5C', fg:'#F0EBE0', lines:['The','Book','of','Mormon'],   dot:'#1B3A5C' },
+  'dc':     { bg:'#000000', fg:'#F0EBE0', lines:['Doctrine','and','Covenants'], dot:'#4A4F58' },
+  'pgp':    { bg:'#000000', fg:'#F0EBE0', lines:['Pearl of','Great Price'],     dot:'#4E3E7A' },
+  'bd':     { bg:'#000000', fg:'#F0EBE0', lines:['Bible','Dictionary'],         dot:'#7A5230' },
+  'gts':    { bg:'#000000', fg:'#F0EBE0', lines:['Guide to the','Scriptures'],  dot:'#265258' },
+  'family': { bg:'#000000', fg:'#F0EBE0', lines:['Family','Library'],           dot:'#6A4A30' },
 };
 
 /* ── Library ── */
