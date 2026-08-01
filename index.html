@@ -30,6 +30,7 @@
   --gold:      #C9A84C;
   --gold-soft: rgba(201,168,76,0.30);
   --gold-glow: rgba(201,168,76,0.16);
+  --gold-foil: #D9B678;
 
   --bubble:      rgba(255,255,255,0.065);   /* resting surface */
   --bubble-hi:   rgba(255,255,255,0.13);    /* focused surface */
@@ -151,7 +152,7 @@ html, body {
   padding: 7px 10px;
   background: rgba(255,255,255,0.075);
   border-radius: var(--r-pill);
-  margin-bottom: 26px;
+  margin-bottom: 12px;
   box-shadow: 0 0 24px rgba(240,235,224,0.05);
 }
 .pill {
@@ -191,22 +192,7 @@ html, body {
   flex-shrink: 0;
   border-radius: var(--r-cover);
   overflow: hidden;
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: 25% 6% 0;
-}
-.hero-cover-title {
-  flex: 0 0 auto;
-  width: 76%;
-  font-family: var(--font-scripture);
-  font-size: 9px;
-  text-align: center;
-  line-height: 1.2;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #D9B678;
-  border-top: 1px solid #D9B678;
-  border-bottom: 1px solid #D9B678;
-  padding: 3px 0;
+  position: relative;
 }
 .hero-info { flex: 1; min-width: 0; }
 .hero-kicker { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }
@@ -233,7 +219,7 @@ html, body {
   color: var(--ink-mid);
   transition: background 200ms var(--ease), color 200ms var(--ease), box-shadow 200ms var(--ease);
 }
-.rchip-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 6px rgba(255,255,255,0.15); }
+.rchip-icon { width: 13px; height: 13px; flex-shrink: 0; color: var(--gold-foil); }
 .rchip:focus {
   background: var(--bubble-hi);
   color: var(--ink);
@@ -273,7 +259,12 @@ html, body {
   box-shadow: 0 0 0 1.5px var(--ring), 0 0 16px var(--ring-glow);
 }
 
-.card-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px; }
+.card-list {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 20px 22px 34px;
+  margin: 0 -20px;
+}
 .card-row {
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
@@ -306,7 +297,8 @@ html, body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px 14px;
-  padding: 6px 4px 16px;
+  padding: 20px 28px 40px;
+  margin: 0 -24px;
   align-content: start;
 }
 .vol-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
@@ -321,27 +313,27 @@ html, body {
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
 }
 .vol-card-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.vol-card-fallback {
+/* ── Shared cover art · sizes off --cw, set per context ── */
+.cover-art {
   position: absolute; inset: 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 25% 6% 0;
-  background-image: none;
+  padding: calc(var(--cw) * 0.25) calc(var(--cw) * 0.06) 0;
 }
-.vol-card-name {
+.cover-art-title {
   flex: 0 0 auto;
-  width: 76%;
+  width: 84%;
   font-family: var(--font-scripture);
-  font-size: 10.5px;
-  text-align: center;
+  font-size: calc(var(--cw) * 0.082);
   line-height: 1.2;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #D9B678;
-  border-top: 1px solid #D9B678;
-  border-bottom: 1px solid #D9B678;
-  padding: 4px 0;
+  text-align: center;
+  color: var(--gold-foil);
+  border-top: 1px solid var(--gold-foil);
+  border-bottom: 1px solid var(--gold-foil);
+  padding: calc(var(--cw) * 0.032) 0;
 }
 .vol-card-ornament-top, .vol-card-ornament-bot { display: none; }
 .vol-wrap:focus .vol-card {
@@ -356,7 +348,8 @@ html, body {
   flex: 1; overflow-y: auto;
   display: flex; flex-wrap: wrap; gap: 11px;
   align-content: flex-start;
-  padding: 4px 2px 16px;
+  padding: 20px 24px 40px;
+  margin: 0 -22px;
 }
 .chip-grid.list-mode { flex-direction: column; flex-wrap: nowrap; gap: 8px; }
 .chip-grid.list-mode .card-row { width: 100%; }
@@ -821,10 +814,9 @@ function renderHome(){
     const ch = getChapter(r.volumeId, r.bookId, r.chapterNum);
     const total = (ch && ch.verses.length) || 1;
     const pct = Math.min(100, Math.round(((r.verseIdx+1)/total)*100));
-    const cov = VOL_COVERS[r.volumeId] || { bg:'#22242B', lines:[r.volumeName] };
-    const heroTitleHtml = (cov.lines || [r.volumeName]).join('<br>');
+    const cov = VOL_COVERS[r.volumeId] || { bg:'#22242B' };
     hero.innerHTML = `
-      <div class="hero-cover" style="background:${cov.bg}"><div class="hero-cover-title">${heroTitleHtml}</div></div>
+      <div class="hero-cover" style="background:${cov.bg}">${coverArt(r.volumeId, r.volumeName, 92)}</div>
       <div class="hero-info">
         <div class="hero-kicker">Continue reading</div>
         <div class="hero-title">${r.label}</div>
@@ -848,11 +840,10 @@ function renderHome(){
   const rest = rec.slice(1,4);
   lbl.style.display = rest.length ? '' : 'none';
   rest.forEach(r=>{
-    const cov = VOL_COVERS[r.volumeId] || { dot:'#666' };
     const c = document.createElement('button');
     c.className = 'rchip focusable';
     c.tabIndex = 0;
-    c.innerHTML = `<span class="rchip-dot" style="background:${cov.dot||cov.bg}"></span>${r.label}`;
+    c.innerHTML = `${chipIcon(r.kind)}${r.label}`;
     c.onclick = ()=>{ nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader(); };
     chips.appendChild(c);
   });
@@ -869,6 +860,25 @@ const VOL_COVERS = {
   'gts':    { bg:'#000000', fg:'#F0EBE0', lines:['Guide to the','Scriptures'],  dot:'#265258' },
   'family': { bg:'#000000', fg:'#F0EBE0', lines:['Family','Library'],           dot:'#6A4A30' },
 };
+
+/* Build cover art at any size. widthPx drives every proportion. */
+function coverArt(volumeId, volumeName, widthPx){
+  const cov = VOL_COVERS[volumeId] || {};
+  const lines = cov.lines || [volumeName];
+  return `<div class="cover-art" style="--cw:${widthPx}px">`
+       +   `<div class="cover-art-title">${lines.join('<br>')}</div>`
+       + `</div>`;
+}
+
+const CHIP_ICONS = {
+  read:  '<path d="M12 6.5C10 5 7.5 4.6 4.5 4.8v12.6c3-.2 5.5.2 7.5 1.7 2-1.5 4.5-1.9 7.5-1.7V4.8c-3-.2-5.5.2-7.5 1.7z"/><path d="M12 6.5v12.6"/>',
+  audio: '<path d="M4.5 15v-3a7.5 7.5 0 0 1 15 0v3"/><path d="M4.5 14.5h1.8a1 1 0 0 1 1 1v3.2a1 1 0 0 1-1 1H6a1.5 1.5 0 0 1-1.5-1.5v-3.7z"/><path d="M19.5 14.5h-1.8a1 1 0 0 0-1 1v3.2a1 1 0 0 0 1 1h.3a1.5 1.5 0 0 0 1.5-1.5v-3.7z"/>'
+};
+function chipIcon(kind){
+  return `<svg class="rchip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
+       + ` stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">`
+       + `${CHIP_ICONS[kind] || CHIP_ICONS.read}</svg>`;
+}
 
 /* ── Library ── */
 function renderLibrary(){
@@ -895,13 +905,7 @@ function renderLibrary(){
 
     // Fallback content (shown when no cover image)
     const fallback = document.createElement('div');
-    fallback.className = 'vol-card-fallback';
-    const titleHtml = (cover.lines || [v.name]).join('<br>');
-    fallback.innerHTML = `
-      <div class="vol-card-ornament-top"></div>
-      <div class="vol-card-name">${titleHtml}</div>
-      <div class="vol-card-ornament-bot"></div>
-    `;
+    fallback.innerHTML = coverArt(v.id, v.name, 127);
 
     card.appendChild(img);
     card.appendChild(fallback);
