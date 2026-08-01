@@ -849,14 +849,14 @@ function renderHome(){
 
 /* ── Vol cover palette ── */
 const VOL_COVERS = {
-  'ot':     { bg:'#43202C', fg:'#F0EBE0' },
-  'nt':     { bg:'#1B4033', fg:'#F0EBE0' },
-  'bom':    { bg:'#1B2E5B', fg:'#F0EBE0' },
-  'dc':     { bg:'#31363F', fg:'#F0EBE0' },
-  'pgp':    { bg:'#2E2350', fg:'#F0EBE0' },
-  'bd':     { bg:'#46311D', fg:'#F0EBE0' },
-  'gts':    { bg:'#164447', fg:'#F0EBE0' },
-  'family': { bg:'#3F2E22', fg:'#F0EBE0' },
+  'ot':     { bg:'#000000', fg:'#F0EBE0', lines:['Old','Testament'] },
+  'nt':     { bg:'#000000', fg:'#F0EBE0', lines:['New','Testament'] },
+  'bom':    { bg:'#1B3A5C', fg:'#F0EBE0', lines:['The','Book','of','Mormon'] },
+  'dc':     { bg:'#000000', fg:'#F0EBE0', lines:['Doctrine','and','Covenants'] },
+  'pgp':    { bg:'#000000', fg:'#F0EBE0', lines:['Pearl of','Great Price'] },
+  'bd':     { bg:'#000000', fg:'#F0EBE0', lines:['Bible','Dictionary'] },
+  'gts':    { bg:'#000000', fg:'#F0EBE0', lines:['Guide to the','Scriptures'] },
+  'family': { bg:'#000000', fg:'#F0EBE0', lines:['Family','Library'] },
 };
 
 /* ── Library ── */
@@ -885,9 +885,10 @@ function renderLibrary(){
     // Fallback content (shown when no cover image)
     const fallback = document.createElement('div');
     fallback.className = 'vol-card-fallback';
+    const titleHtml = (cover.lines || [v.name]).join('<br>');
     fallback.innerHTML = `
       <div class="vol-card-ornament-top"></div>
-      <div class="vol-card-name">${v.name}</div>
+      <div class="vol-card-name">${titleHtml}</div>
       <div class="vol-card-ornament-bot"></div>
     `;
 
