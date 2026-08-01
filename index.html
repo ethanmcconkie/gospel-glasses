@@ -295,7 +295,8 @@ html, body {
   flex: 1;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 92px);
+  justify-content: center;
   gap: 18px 14px;
   padding: 20px 28px 40px;
   margin: 0 -24px;
@@ -340,7 +341,7 @@ html, body {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 0 0 1.5px var(--ring), 0 0 24px var(--ring-glow), 0 0 44px rgba(240,235,224,0.06);
 }
-.vol-label { font-size: 9.5px; color: var(--ink-dim); text-align: center; line-height: 1.4; transition: color 220ms var(--ease); }
+.vol-label { font-size: 8.5px; color: var(--ink-dim); text-align: center; line-height: 1.4; transition: color 220ms var(--ease); }
 .vol-wrap:focus .vol-label { color: var(--ink-mid); }
 
 /* ───────────── CHAPTER CHIPS ───────────── */
@@ -905,7 +906,7 @@ function renderLibrary(){
 
     // Fallback content (shown when no cover image)
     const fallback = document.createElement('div');
-    fallback.innerHTML = coverArt(v.id, v.name, 127);
+    fallback.innerHTML = coverArt(v.id, v.name, 92);
 
     card.appendChild(img);
     card.appendChild(fallback);
