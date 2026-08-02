@@ -328,6 +328,13 @@ html, body {
   box-shadow: 0 0 0 1.5px var(--ring), 0 0 16px var(--ring-glow);
 }
 
+.recents-scroll {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column;
+  padding: 20px 22px 34px;
+  margin: 0 -20px;
+}
+.recents-scroll .recent-chips { margin-bottom: 4px; }
 .card-list {
   flex: 1; overflow-y: auto;
   display: flex; flex-direction: column; gap: 8px;
@@ -770,7 +777,7 @@ html, body {
       <span class="back-chev">‹</span><span>Home</span>
     </button>
     <div class="screen-title">Recents</div>
-    <div class="card-list" id="recentsList"></div>
+    <div class="recents-scroll" id="recentsList"></div>
   </section>
 
   <!-- BOOKS -->
@@ -892,7 +899,7 @@ const navHistory = [];
 /* ── Persistence ── */
 function loadJSON(k,fb){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):fb; }catch(e){ return fb; } }
 function saveJSON(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-function recents()  { return loadJSON('gl_recents',[]).filter(entryStillValid); }
+function recents()  { return loadJSON('gl_recents',[]).filter(e=>entryStillValid(e) && e.volumeId!=='hymns'); }
 function bookmarks(){ return loadJSON('gl_bookmarks',[]).filter(entryStillValid); }
 function entryStillValid(e){
   const vol=getVolume(e.volumeId); if(!vol) return false;
@@ -901,6 +908,7 @@ function entryStillValid(e){
 }
 function verseKey(v,b,c,i){ return v+'|'+b+'|'+c+'|'+i; }
 function touchRecent(){
+  if(nav.volumeId === 'hymns') return;
   const vol=getVolume(nav.volumeId), book=getBook(nav.volumeId,nav.bookId);
   const chapter=getChapter(nav.volumeId,nav.bookId,nav.chapterNum);
   const label=chapter.title?chapter.title:(book.name+' '+nav.chapterNum);
@@ -1020,13 +1028,23 @@ function renderHome(){
     const pct = Math.min(100, Math.round(((r.verseIdx+1)/total)*100));
     const cov = VOL_COVERS[r.volumeId] || { bg:'#22242B' };
     hero.innerHTML = `
-      <div class="hero-cover" style="background:${cov.bg}">${coverArt(r.volumeId, r.volumeName, 92)}</div>
+      <div class="hero-cover" style="background:${cov.bg}">
+        <img class="vol-card-img" src="covers/${r.volumeId}.jpg" alt="">
+        ${coverArt(r.volumeId, r.volumeName, 92)}
+      </div>
       <div class="hero-info">
         <div class="hero-kicker">Continue reading</div>
         <div class="hero-title">${r.label}</div>
         <div class="hero-sub">${r.volumeName} · Verse ${r.verseIdx+1}</div>
         <div class="hero-prog"><div class="bar"><i style="width:${pct}%"></i></div><span class="hero-pct">${pct}%</span></div>
       </div>`;
+    const hImg = hero.querySelector('.hero-cover .vol-card-img');
+    const hArt = hero.querySelector('.hero-cover .cover-art');
+    if(hArt) hArt.style.display = 'none';
+    if(hImg){
+      hImg.onerror = ()=>{ hImg.style.display='none'; if(hArt) hArt.style.display=''; };
+      hImg.onload  = ()=>{ if(hArt) hArt.style.display='none'; };
+    }
     hero.onclick = ()=>{ nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader(); };
   } else {
     hero.innerHTML = `
@@ -1135,29 +1153,40 @@ function renderLibrary(){
 function renderRecents(focusBookmarks){
   const list = document.getElementById('recentsList');
   list.innerHTML = '';
-  const rec = recents();
+
+  const rec = recents().slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
   const lbl1 = document.createElement('div'); lbl1.className='section-label'; lbl1.textContent='Continue Reading';
   list.appendChild(lbl1);
   if(rec.length){
-    rec.forEach(r=>list.appendChild(makeRow(r.label, r.volumeName, ()=>{
-      nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader();
-    })));
+    const chipWrap = document.createElement('div');
+    chipWrap.className = 'recent-chips';
+    rec.forEach(r=>{
+      const c = document.createElement('button');
+      c.className = 'rchip focusable'; c.tabIndex = 0;
+      c.innerHTML = `${chipIcon(r.kind)}${r.label}`;
+      c.onclick = ()=>{ nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader(); };
+      chipWrap.appendChild(c);
+    });
+    list.appendChild(chipWrap);
   } else {
     const n = document.createElement('div'); n.className='recents-note';
     n.textContent = 'Chapters you open will appear here.';
     list.appendChild(n);
   }
+
   const bm = bookmarks();
   if(bm.length){
     const lbl2 = document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Bookmarks';
     list.appendChild(lbl2);
+    const bmWrap = document.createElement('div'); bmWrap.className='card-list'; bmWrap.style.cssText='flex:unset;overflow:unset;padding:0;margin:0;gap:8px';
     bm.forEach((b,i)=>{
       const row = makeRow(b.label, 'Bookmark', ()=>{
         nav={volumeId:b.volumeId,bookId:b.bookId,chapterNum:b.chapterNum,verseIdx:b.verseIdx}; openReader();
       });
       if(i===0) row.classList.add('bm-first');
-      list.appendChild(row);
+      bmWrap.appendChild(row);
     });
+    list.appendChild(bmWrap);
   }
 }
 
