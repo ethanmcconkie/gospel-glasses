@@ -780,11 +780,42 @@ html, body {
 
   <!-- RECENTS -->
   <section class="screen" id="recents">
-    <button class="back-btn focusable" onclick="goBack()">
-      <span class="back-chev">‹</span><span>Home</span>
-    </button>
-    <div class="screen-title">Recents</div>
+    <div class="screen-title-center">Recents</div>
+    <nav class="pill-bar">
+      <button class="pill focusable" data-nav="home" tabindex="0" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9.5"/></svg>
+      </button>
+      <button class="pill focusable" data-nav="library" tabindex="0" aria-label="Library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4v16H4z"/><path d="M10 4h4v16h-4z"/><path d="m16.5 4.6 3.4.9-3.9 15-3.4-.9z"/></svg>
+      </button>
+      <button class="pill focusable" data-nav="bookmarks" tabindex="0" aria-label="Bookmarks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <button class="pill active focusable" data-nav="recents" tabindex="0" aria-label="Recents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>
+      </button>
+    </nav>
     <div class="recents-scroll" id="recentsList"></div>
+  </section>
+
+  <!-- BOOKMARKS -->
+  <section class="screen" id="bookmarks">
+    <div class="screen-title-center">Bookmarks</div>
+    <nav class="pill-bar">
+      <button class="pill focusable" data-nav="home" tabindex="0" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9.5"/></svg>
+      </button>
+      <button class="pill focusable" data-nav="library" tabindex="0" aria-label="Library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4v16H4z"/><path d="M10 4h4v16h-4z"/><path d="m16.5 4.6 3.4.9-3.9 15-3.4-.9z"/></svg>
+      </button>
+      <button class="pill active focusable" data-nav="bookmarks" tabindex="0" aria-label="Bookmarks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <button class="pill focusable" data-nav="recents" tabindex="0" aria-label="Recents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>
+      </button>
+    </nav>
+    <div class="card-list" id="bookmarksList"></div>
   </section>
 
   <!-- BOOKS -->
@@ -968,14 +999,10 @@ function wirePills(screenId){
     p.onclick = ()=>{
       const t = p.dataset.nav;
       if(p.classList.contains('active')) return;
-      if(t==='home'){ navHistory.length=0; showScreen('home', false); return; }
-      if(t==='library'){ renderLibrary(); showScreen('library'); return; }
-      renderRecents(t==='bookmarks');
-      showScreen('recents');
-      if(t==='bookmarks'){
-        const first = document.querySelector('#recentsList .bm-first');
-        if(first){ first.focus(); first.scrollIntoView({block:'center'}); }
-      }
+      if(t==='home')      { navHistory.length=0; showScreen('home',false); return; }
+      if(t==='library')   { renderLibrary();   showScreen('library');   return; }
+      if(t==='bookmarks') { renderBookmarks(); showScreen('bookmarks'); return; }
+      if(t==='recents')   { renderRecents();   showScreen('recents');   return; }
     };
   });
 }
@@ -1065,7 +1092,7 @@ function renderHome(){
 
   const chips = document.getElementById('homeRecentChips');
   const lbl = document.getElementById('homeRecentsLabel');
-  lbl.onclick = ()=>{ renderRecents(false); showScreen('recents'); };
+  lbl.onclick = ()=>{ renderRecents(); showScreen('recents'); };
   chips.innerHTML = '';
   const rest = rec.slice(1,4);
   lbl.style.display = rest.length ? '' : 'none';
@@ -1157,44 +1184,71 @@ function renderLibrary(){
 }
 
 /* ── Recents ── */
-function renderRecents(focusBookmarks){
+function recentsDateLabel(ts){
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const t = todayStart.getTime();
+  if(ts >= t)           return 'Today';
+  if(ts >= t - 864e5)   return 'Yesterday';
+  if(ts >= t - 6*864e5) return 'This Week';
+  return 'Earlier';
+}
+
+function renderRecents(){
+  wirePills('recents');
   const list = document.getElementById('recentsList');
   list.innerHTML = '';
 
   const rec = recents().slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
-  const lbl1 = document.createElement('div'); lbl1.className='section-label'; lbl1.textContent='Continue Reading';
-  list.appendChild(lbl1);
-  if(rec.length){
-    const chipWrap = document.createElement('div');
-    chipWrap.className = 'recent-chips';
-    rec.forEach(r=>{
+  if(!rec.length){
+    const n = document.createElement('div'); n.className='recents-note';
+    n.textContent = 'Chapters you open will appear here.';
+    list.appendChild(n);
+    return;
+  }
+
+  /* Group by date bucket */
+  const groups = {};
+  const order  = [];
+  rec.forEach(r=>{
+    const lbl = recentsDateLabel(r.ts||0);
+    if(!groups[lbl]){ groups[lbl]=[]; order.push(lbl); }
+    groups[lbl].push(r);
+  });
+
+  order.forEach(lbl=>{
+    const heading = document.createElement('div');
+    heading.className = 'section-label'; heading.textContent = lbl;
+    list.appendChild(heading);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'recent-chips';
+    groups[lbl].forEach(r=>{
       const c = document.createElement('button');
       c.className = 'rchip focusable'; c.tabIndex = 0;
       c.innerHTML = `${chipIcon(r.kind)}${r.label}`;
       c.onclick = ()=>{ nav={volumeId:r.volumeId,bookId:r.bookId,chapterNum:r.chapterNum,verseIdx:r.verseIdx}; openReader(); };
-      chipWrap.appendChild(c);
+      wrap.appendChild(c);
     });
-    list.appendChild(chipWrap);
-  } else {
-    const n = document.createElement('div'); n.className='recents-note';
-    n.textContent = 'Chapters you open will appear here.';
-    list.appendChild(n);
-  }
+    list.appendChild(wrap);
+  });
+}
 
+function renderBookmarks(){
+  wirePills('bookmarks');
+  const list = document.getElementById('bookmarksList');
+  list.innerHTML = '';
   const bm = bookmarks();
-  if(bm.length){
-    const lbl2 = document.createElement('div'); lbl2.className='section-label'; lbl2.textContent='Bookmarks';
-    list.appendChild(lbl2);
-    const bmWrap = document.createElement('div'); bmWrap.className='card-list'; bmWrap.style.cssText='flex:unset;overflow:unset;padding:0;margin:0;gap:8px';
-    bm.forEach((b,i)=>{
-      const row = makeRow(b.label, 'Bookmark', ()=>{
-        nav={volumeId:b.volumeId,bookId:b.bookId,chapterNum:b.chapterNum,verseIdx:b.verseIdx}; openReader();
-      });
-      if(i===0) row.classList.add('bm-first');
-      bmWrap.appendChild(row);
-    });
-    list.appendChild(bmWrap);
+  if(!bm.length){
+    const n = document.createElement('div'); n.className='recents-note';
+    n.textContent = 'Verses you bookmark will appear here.';
+    list.appendChild(n);
+    return;
   }
+  bm.forEach(b=>{
+    list.appendChild(makeRow(b.label, null, ()=>{
+      nav={volumeId:b.volumeId,bookId:b.bookId,chapterNum:b.chapterNum,verseIdx:b.verseIdx}; openReader();
+    }));
+  });
 }
 
 /* ── Books ── */
@@ -1483,7 +1537,7 @@ function moveFocus(dir){
 
   /* Check if in a 2D grid context */
   const volGrid    = cur.closest('.vol-grid');
-  const chipGrid   = cur.closest('.chip-grid:not(.list-mode)');
+  const chipGrid   = cur.closest('.chip-grid:not(.list-mode)') || cur.closest('.recent-chips');
   const keypadGrid = cur.closest('.keypad-grid');
   const pillScreen = (!volGrid && !chipGrid && !keypadGrid && scope.querySelector && scope.querySelector('.pill-bar')) ? scope : null;
   const gridHost = volGrid || chipGrid || keypadGrid || pillScreen;
