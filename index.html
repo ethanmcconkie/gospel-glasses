@@ -479,6 +479,20 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Hymn stanzas: poetry layout — no paragraph indent, looser leading */
+#chapterScroll[data-volume="hymns"] .verse-body {
+  text-indent: 0;
+  line-height: 1.85;
+}
+#chapterScroll[data-volume="hymns"] .verse-num {
+  display: inline-block;
+  min-width: 1.4em;
+  font-size: 10px;
+  vertical-align: super;
+  color: var(--gold);
+  opacity: 0.7;
+}
+
 .empty-state {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -860,6 +874,7 @@ const VOL_COVERS = {
   'bd':     { bg:'#000000', fg:'#F0EBE0', lines:['Bible','Dictionary'],         dot:'#7A5230' },
   'gts':    { bg:'#000000', fg:'#F0EBE0', lines:['Guide to the','Scriptures'],  dot:'#265258' },
   'family': { bg:'#000000', fg:'#F0EBE0', lines:['Family','Library'],           dot:'#6A4A30' },
+  'hymns':  { bg:'#1A1208', fg:'#F0EBE0', lines:['Hymns'],                      dot:'#C9A84C' },
 };
 
 /* Build cover art at any size. widthPx drives every proportion. */
@@ -981,7 +996,12 @@ function renderChapters(){
     const el = document.createElement('div');
     el.className = (hasTitles?'card-row':'chip') + ' focusable' + (isEmpty?' empty':'');
     el.tabIndex = 0;
-    if(hasTitles) el.innerHTML=`<div><div class="label">${c.title}</div></div><div class="chev">›</div>`;
+    if(hasTitles){
+      const numBadge = (nav.volumeId==='hymns')
+        ? `<span style="font-size:11px;color:var(--ink-dim);margin-right:8px;font-variant-numeric:tabular-nums">${c.num}</span>`
+        : '';
+      el.innerHTML=`<div><div class="label">${numBadge}${c.title}</div></div><div class="chev">›</div>`;
+    }
     else el.textContent = c.num;
     el.addEventListener('click',()=>{ if(isEmpty) return; nav.chapterNum=c.num; nav.verseIdx=0; openReader(); });
     grid.appendChild(el);
@@ -993,8 +1013,12 @@ function openReader(){ showScreen('reader'); renderChapterContent(); }
 function renderChapterContent(){
   const book = getBook(nav.volumeId, nav.bookId);
   const chapter = getChapter(nav.volumeId, nav.bookId, nav.chapterNum);
-  document.getElementById('refTag').textContent = chapter.title?chapter.title:(book.name+' · '+nav.chapterNum);
+  const isHymn = nav.volumeId === 'hymns';
+  document.getElementById('refTag').textContent =
+    isHymn ? 'Hymn ' + nav.chapterNum :
+    chapter.title ? chapter.title : (book.name + ' · ' + nav.chapterNum);
   const scroll = document.getElementById('chapterScroll');
+  scroll.dataset.volume = nav.volumeId;
   scroll.innerHTML = '';
   if(!chapter.verses.length){
     const e = document.createElement('div'); e.className='empty-state';
@@ -1006,9 +1030,10 @@ function renderChapterContent(){
   }
   const hdr = document.createElement('div');
   hdr.className = 'chapter-header';
-  const chapterWord = (nav.volumeId==='dc') ? 'Section' : 'Chapter';
+  const chapterWord = nav.volumeId === 'dc' ? 'Section' : 'Chapter';
   if(chapter.title){
-    hdr.innerHTML = `<div class="chapter-intro">${chapter.title}</div>`
+    hdr.innerHTML = (isHymn ? `<div class="chapter-book-name">Hymn ${nav.chapterNum}</div>` : '')
+      + `<div class="chapter-intro">${chapter.title}</div>`
       + (chapter.heading ? `<div class="chapter-summary">${chapter.heading}</div>` : '');
   } else {
     hdr.innerHTML = `
