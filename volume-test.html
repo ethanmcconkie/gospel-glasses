@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=600, height=600, initial-scale=1, user-scalable=no">
+<title>Volume Test</title>
+<style>
+  body{margin:0;width:600px;height:600px;background:#000;color:#F2F4F7;
+       font-family:ui-monospace,monospace;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;gap:24px}
+  .big{font-size:64px;font-weight:700;color:#FFB000}
+  .label{font-size:16px;color:#71818F}
+  .log{font-size:13px;color:#5BD98A;text-align:left;width:80%;height:120px;
+       overflow:hidden;white-space:pre-line}
+</style>
+</head>
+<body>
+  <div class="label">audio.volume</div>
+  <div class="big" id="vol">--</div>
+  <div class="label" id="status">waiting for volumechange event…</div>
+  <div class="log" id="log"></div>
+
+<script>
+  const audio = new Audio(
+    "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+  );
+  audio.loop = true;
+  audio.volume = 0.5;
+
+  const volEl = document.getElementById("vol");
+  const statusEl = document.getElementById("status");
+  const logEl = document.getElementById("log");
+  let count = 0;
+
+  function log(msg) {
+    logEl.textContent = `[${++count}] ${msg}\n` + logEl.textContent;
+  }
+
+  audio.addEventListener("volumechange", () => {
+    volEl.textContent = audio.volume.toFixed(2);
+    statusEl.textContent = "volumechange fired ✓ — this IS listenable";
+    statusEl.style.color = "#5BD98A";
+    log(`volume=${audio.volume.toFixed(2)} muted=${audio.muted}`);
+  });
+
+  audio.play().then(() => {
+    log("audio started");
+  }).catch(err => {
+    log("play() blocked: " + err.message);
+    statusEl.textContent = "tap/pinch once to allow audio, then try volume gesture";
+  });
+</script>
+</body>
+</html>
