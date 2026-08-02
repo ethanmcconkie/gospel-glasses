@@ -55,6 +55,7 @@
 <div id="log"></div>
 
 <script>
+var wl = null;
 var logEl = document.getElementById('log');
 function log(msg, cls){
   var d = document.createElement('div');
@@ -88,11 +89,12 @@ function makeToneWav(seconds, rate){
 }
 
 var audio = new Audio();
-audio.loop = true;
+audio.loop = false;
 audio.preload = 'auto';
 try {
-  audio.src = URL.createObjectURL(makeToneWav(10, 8000));
-  log('tone built, 10s loop', 'ok');
+  var t0 = Date.now();
+  audio.src = URL.createObjectURL(makeToneWav(300, 8000));
+  log('tone built: 5:00 continuous, no loop (' + (Date.now()-t0) + 'ms)', 'ok');
 } catch (e) {
   log('tone build FAILED: ' + e.message, 'bad');
 }
@@ -130,7 +132,12 @@ if ('mediaSession' in navigator) {
 
 /* ---------- Lifecycle: this is the actual screen-off evidence ---------- */
 document.addEventListener('visibilitychange', function(){
-  log('visibilitychange -> ' + document.visibilityState + ' | audio.paused=' + audio.paused, 'hit');
+  log('visibilitychange -> ' + document.visibilityState
+      + ' | paused=' + audio.paused
+      + ' | pos ' + audio.currentTime.toFixed(1) + 's', 'hit');
+  if (document.visibilityState === 'visible' && !wl && typeof requestWakeLock === 'function') {
+    requestWakeLock();
+  }
 });
 window.addEventListener('pagehide', function(){ log('pagehide fired', 'hit'); });
 window.addEventListener('freeze',   function(){ log('freeze fired (page suspended)', 'bad'); });
@@ -141,17 +148,26 @@ audio.addEventListener('playing', function(){ log('audio playing', 'ok'); });
 /* ---------- Position clock: proves whether audio kept running ---------- */
 var clock = document.getElementById('clock');
 setInterval(function(){
-  var s = Math.floor(audio.currentTimeTotal || audio.currentTime);
+  var s = Math.floor(audio.currentTime);
   clock.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
 }, 250);
 
-/* loop resets currentTime, so track cumulative separately */
-var loops = 0, last = 0;
-audio.addEventListener('timeupdate', function(){
-  if (audio.currentTime < last) loops++;
-  last = audio.currentTime;
-  audio.currentTimeTotal = loops * 10 + audio.currentTime;
-});
+/* Heartbeat: a timeline of what happened, not just the endpoint */
+var beat = 0;
+setInterval(function(){
+  beat++;
+  var vis = document.visibilityState;
+  var cls = audio.paused ? 'bad' : 'info';
+  log('t+' + (beat*5) + 's | pos ' + audio.currentTime.toFixed(1)
+      + 's | paused=' + audio.paused
+      + ' | ' + vis
+      + ' | wakelock=' + (wl ? 'held' : 'none'), cls);
+}, 5000);
+
+audio.addEventListener('ended',   function(){ log('audio ENDED normally at 300s', 'ok'); });
+audio.addEventListener('stalled', function(){ log('audio stalled', 'bad'); });
+audio.addEventListener('suspend', function(){ log('audio suspend event', 'info'); });
+audio.addEventListener('waiting', function(){ log('audio waiting', 'info'); });
 
 /* ---------- Start ---------- */
 var go = document.getElementById('go');
@@ -182,13 +198,12 @@ function start(why){
 }
 
 /* Hold the display awake so we test suspension, not just timeout */
-var wl = null;
 function requestWakeLock(){
   if (!('wakeLock' in navigator)) return;
   navigator.wakeLock.request('screen').then(function(l){
     wl = l;
-    log('wake lock ACQUIRED', 'ok');
-    l.addEventListener('release', function(){ log('wake lock released', 'hit'); });
+    log('wake lock ACQUIRED — display should stay lit', 'ok');
+    l.addEventListener('release', function(){ wl = null; log('wake lock RELEASED', 'bad'); });
   }).catch(function(e){
     log('wake lock failed: ' + e.name, 'bad');
   });
@@ -203,6 +218,7 @@ document.addEventListener('touchstart',function(){ start('touch'); });
 document.addEventListener('pointerdown',function(){ start('pointer'); });
 
 /* Try immediately in case autoplay is permitted at all */
+requestWakeLock();
 start('autoplay');
 
 /* And keep retrying for the first 20s in case the first attempt was too early */
