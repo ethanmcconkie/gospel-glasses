@@ -28,6 +28,9 @@
   }
   .btn:focus { outline:none; background:rgba(255,255,255,0.16); box-shadow:0 0 0 1.5px rgba(240,235,224,0.5); }
 
+  .state { font-size:20px; letter-spacing:0.08em; padding:8px 0 12px; }
+  .state.on  { color:#8FCf9F; }
+  .state.off { color:#E08A7A; }
   #log {
     flex:1; overflow-y:auto; font-family:ui-monospace,Menlo,monospace;
     font-size:11.5px; line-height:1.65;
@@ -45,8 +48,9 @@
 
 <div class="clock" id="clock">0:00</div>
 <div class="clocklbl">audio position &middot; keeps counting only while audio runs</div>
+<div class="state" id="state">NOT PLAYING</div>
 
-<button class="btn" id="go" tabindex="0">Start tone</button>
+<button class="btn" id="go" tabindex="0">Start tone &mdash; press anything</button>
 
 <div id="log"></div>
 
@@ -151,20 +155,69 @@ audio.addEventListener('timeupdate', function(){
 
 /* ---------- Start ---------- */
 var go = document.getElementById('go');
-function start(){
-  audio.play().then(function(){
-    log('play() resolved', 'ok');
+var stateEl = document.getElementById('state');
+var started = false;
+
+function setState(){
+  var on = !audio.paused;
+  stateEl.textContent = on ? 'PLAYING' : 'NOT PLAYING';
+  stateEl.className = 'state ' + (on ? 'on' : 'off');
+}
+setInterval(setState, 300);
+
+function start(why){
+  if (started && !audio.paused) return;
+  log('play() attempt via ' + why);
+  var p = audio.play();
+  if (!p || !p.then){ log('play() returned no promise', 'info'); started = true; return; }
+  p.then(function(){
+    started = true;
+    log('play() RESOLVED', 'ok');
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-    go.textContent = 'Playing — let the display sleep';
+    go.textContent = 'Playing — now let the display sleep';
+    requestWakeLock();
   }).catch(function(e){
     log('play() REJECTED: ' + e.name + ' — ' + e.message, 'bad');
   });
 }
-go.addEventListener('click', start);
-document.addEventListener('keydown', function(e){
-  if (e.key === 'Enter'){ start(); e.preventDefault(); }
-});
+
+/* Hold the display awake so we test suspension, not just timeout */
+var wl = null;
+function requestWakeLock(){
+  if (!('wakeLock' in navigator)) return;
+  navigator.wakeLock.request('screen').then(function(l){
+    wl = l;
+    log('wake lock ACQUIRED', 'ok');
+    l.addEventListener('release', function(){ log('wake lock released', 'hit'); });
+  }).catch(function(e){
+    log('wake lock failed: ' + e.name, 'bad');
+  });
+}
+
+/* Start on literally anything */
+go.addEventListener('click', function(){ start('click'); });
+document.addEventListener('click',     function(){ start('doc click'); });
+document.addEventListener('keydown',   function(e){ log('keydown: ' + e.key + ' (code ' + e.code + ')'); start('key ' + e.key); });
+document.addEventListener('keyup',     function(e){ start('keyup'); });
+document.addEventListener('touchstart',function(){ start('touch'); });
+document.addEventListener('pointerdown',function(){ start('pointer'); });
+
+/* Try immediately in case autoplay is permitted at all */
+start('autoplay');
+
+/* And keep retrying for the first 20s in case the first attempt was too early */
+var tries = 0;
+var retry = setInterval(function(){
+  if (started || tries++ > 20){ clearInterval(retry); return; }
+  audio.play().then(function(){
+    started = true;
+    log('play() RESOLVED on retry ' + tries, 'ok');
+    requestWakeLock();
+  }).catch(function(){});
+}, 1000);
+
 go.focus();
+log('ready — press any button, or tap');
 </script>
 
 </body>
