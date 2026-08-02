@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Audio capability probe">
+<meta name="mrbd-web-app-capable" content="yes">
+<title>Audio Probe</title>
+<style>
+  :root { --gold:#D9B678; --ink:#F0EBE0; --dim:rgba(240,235,224,0.45); }
+  * { box-sizing: border-box; }
+  body {
+    width:600px; height:600px; margin:0; overflow:hidden;
+    background:#000; color:var(--ink);
+    font-family:'Noto Serif',Georgia,serif;
+    display:flex; flex-direction:column; padding:24px 30px;
+  }
+  h1 { font-size:17px; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 4px; font-weight:600; }
+  .sub { font-size:12px; color:var(--dim); margin-bottom:14px; }
+
+  .clock { font-size:44px; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1; }
+  .clocklbl { font-size:11px; color:var(--dim); margin-top:4px; margin-bottom:14px; }
+
+  .btn {
+    width:100%; padding:14px; border:none; border-radius:999px;
+    background:rgba(255,255,255,0.075); color:var(--ink);
+    font-family:inherit; font-size:15px; margin-bottom:14px;
+  }
+  .btn:focus { outline:none; background:rgba(255,255,255,0.16); box-shadow:0 0 0 1.5px rgba(240,235,224,0.5); }
+
+  #log {
+    flex:1; overflow-y:auto; font-family:ui-monospace,Menlo,monospace;
+    font-size:11.5px; line-height:1.65;
+  }
+  .ok   { color:#8FCf9F; }
+  .bad  { color:#E08A7A; }
+  .info { color:var(--dim); }
+  .hit  { color:var(--gold); }
+</style>
+</head>
+<body>
+
+<h1>Audio Probe</h1>
+<div class="sub">Press Enter to start. Then let the display sleep.</div>
+
+<div class="clock" id="clock">0:00</div>
+<div class="clocklbl">audio position &middot; keeps counting only while audio runs</div>
+
+<button class="btn" id="go" tabindex="0">Start tone</button>
+
+<div id="log"></div>
+
+<script>
+var logEl = document.getElementById('log');
+function log(msg, cls){
+  var d = document.createElement('div');
+  d.className = cls || 'info';
+  var t = new Date().toLocaleTimeString();
+  d.textContent = '[' + t + '] ' + msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* ---------- Build a looping tone with no network ---------- */
+function makeToneWav(seconds, rate){
+  var n = seconds * rate;
+  var buf = new ArrayBuffer(44 + n * 2);
+  var v = new DataView(buf);
+  function str(o, s){ for (var i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); }
+  str(0,'RIFF'); v.setUint32(4, 36 + n*2, true); str(8,'WAVE');
+  str(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  str(36,'data'); v.setUint32(40, n*2, true);
+
+  for (var i=0;i<n;i++){
+    var t = i / rate;
+    // quiet drone plus a short pip every 2s so it is obvious by ear
+    var a = 0.06 * Math.sin(2*Math.PI*220*t);
+    var into = t % 2;
+    if (into < 0.12) a += 0.16 * Math.sin(2*Math.PI*660*t) * (1 - into/0.12);
+    v.setInt16(44 + i*2, Math.max(-1,Math.min(1,a)) * 32767, true);
+  }
+  return new Blob([buf], { type:'audio/wav' });
+}
+
+var audio = new Audio();
+audio.loop = true;
+audio.preload = 'auto';
+try {
+  audio.src = URL.createObjectURL(makeToneWav(10, 8000));
+  log('tone built, 10s loop', 'ok');
+} catch (e) {
+  log('tone build FAILED: ' + e.message, 'bad');
+}
+
+/* ---------- Capability checks ---------- */
+log('--- capability ---');
+log('mediaSession present: ' + ('mediaSession' in navigator), ('mediaSession' in navigator) ? 'ok' : 'bad');
+log('MediaMetadata present: ' + (typeof window.MediaMetadata !== 'undefined'), (typeof window.MediaMetadata !== 'undefined') ? 'ok' : 'bad');
+log('wakeLock present: ' + ('wakeLock' in navigator), ('wakeLock' in navigator) ? 'ok' : 'info');
+log('AudioContext present: ' + !!(window.AudioContext || window.webkitAudioContext), 'info');
+
+if ('mediaSession' in navigator) {
+  try {
+    if (typeof window.MediaMetadata !== 'undefined') {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Audio Probe', artist: 'Bookshelf', album: 'Capability test'
+      });
+      log('metadata set', 'ok');
+    }
+  } catch (e) { log('metadata FAILED: ' + e.message, 'bad'); }
+
+  ['play','pause','stop','seekbackward','seekforward','previoustrack','nexttrack'].forEach(function(act){
+    try {
+      navigator.mediaSession.setActionHandler(act, function(){
+        log('HANDLER FIRED: ' + act, 'hit');
+        if (act === 'play')  audio.play();
+        if (act === 'pause') audio.pause();
+      });
+      log('handler accepted: ' + act, 'ok');
+    } catch (e) {
+      log('handler rejected: ' + act, 'info');
+    }
+  });
+}
+
+/* ---------- Lifecycle: this is the actual screen-off evidence ---------- */
+document.addEventListener('visibilitychange', function(){
+  log('visibilitychange -> ' + document.visibilityState + ' | audio.paused=' + audio.paused, 'hit');
+});
+window.addEventListener('pagehide', function(){ log('pagehide fired', 'hit'); });
+window.addEventListener('freeze',   function(){ log('freeze fired (page suspended)', 'bad'); });
+window.addEventListener('resume',   function(){ log('resume fired', 'hit'); });
+audio.addEventListener('pause',   function(){ log('audio PAUSED at ' + audio.currentTime.toFixed(1) + 's', 'bad'); });
+audio.addEventListener('playing', function(){ log('audio playing', 'ok'); });
+
+/* ---------- Position clock: proves whether audio kept running ---------- */
+var clock = document.getElementById('clock');
+setInterval(function(){
+  var s = Math.floor(audio.currentTimeTotal || audio.currentTime);
+  clock.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}, 250);
+
+/* loop resets currentTime, so track cumulative separately */
+var loops = 0, last = 0;
+audio.addEventListener('timeupdate', function(){
+  if (audio.currentTime < last) loops++;
+  last = audio.currentTime;
+  audio.currentTimeTotal = loops * 10 + audio.currentTime;
+});
+
+/* ---------- Start ---------- */
+var go = document.getElementById('go');
+function start(){
+  audio.play().then(function(){
+    log('play() resolved', 'ok');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+    go.textContent = 'Playing — let the display sleep';
+  }).catch(function(e){
+    log('play() REJECTED: ' + e.name + ' — ' + e.message, 'bad');
+  });
+}
+go.addEventListener('click', start);
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Enter'){ start(); e.preventDefault(); }
+});
+go.focus();
+</script>
+
+</body>
+</html>
