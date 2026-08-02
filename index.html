@@ -936,7 +936,7 @@ function renderMusic(){
     +   `<div class="music-kicker">Music</div>`
     +   `<div class="music-title">Hymns</div>`
     + `</div>`;
-  el.onclick = ()=>{ nav.volumeId = 'hymns'; renderBooks(); showScreen('books'); };
+  el.onclick = ()=>{ nav.volumeId = 'hymns'; nav.bookId = 'hymns'; renderChapters(); showScreen('chapters'); };
 }
 
 function renderHome(){
