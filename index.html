@@ -268,10 +268,15 @@ html, body {
   font-size: 12px; color: var(--ink-dim);
   margin: 20px 4px 10px;
 }
+.home-recents-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 20px;
+}
 .home-recents-label {
-  font-size: 12px; color: var(--ink-dim); margin: 24px 4px 10px;
+  font-size: 12px; color: var(--ink-dim);
   background: none; border: none; padding: 0; font-family: inherit;
   cursor: default; -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 .home-recents-label:focus {
   outline: none; color: var(--ink-mid);
@@ -743,8 +748,10 @@ html, body {
       <div class="home-section-label">Continue reading</div>
       <div class="hero-card focusable" id="homeHero" tabindex="0"></div>
 
-      <button class="home-recents-label focusable" id="homeRecentsLabel" tabindex="0">Recents</button>
-      <div class="recent-chips" id="homeRecentChips"></div>
+      <div class="home-recents-row">
+        <button class="home-recents-label focusable" id="homeRecentsLabel" tabindex="0">Recents</button>
+        <div class="recent-chips" id="homeRecentChips"></div>
+      </div>
 
       <div class="home-section-label">Hymns</div>
       <button class="music-card focusable" id="homeMusic" tabindex="0"></button>
