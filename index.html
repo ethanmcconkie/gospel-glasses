@@ -1142,6 +1142,8 @@ function chipIcon(kind){
 function renderLibrary(){
   wirePills('library');
   const grid = document.getElementById('volGrid');
+  if(grid.dataset.built === '1') return;
+  grid.dataset.built = '1';
   grid.innerHTML = '';
   SCRIPTURES.volumes.filter(v => v.id !== 'hymns').forEach(v=>{
     const cover = VOL_COVERS[v.id] || { bg:'#0C0C10', fg:'#C9A84C' };
