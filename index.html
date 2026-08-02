@@ -1102,16 +1102,17 @@ function renderLibrary(){
     card.style.setProperty('--cover-bg', cover.bg);
     card.style.setProperty('--cover-fg', cover.fg);
 
-    // Cover photo image — falls back to CSS if 404
+    // Cover photo image — falls back to CSS art if 404
+    const fallback = document.createElement('div');
+    fallback.innerHTML = coverArt(v.id, v.name, 92);
+
     const img = document.createElement('img');
     img.className = 'vol-card-img';
     img.src = 'covers/' + v.id + '.jpg';
     img.alt = v.name;
-    img.onerror = function(){ this.style.display = 'none'; };
-
-    // Fallback content (shown when no cover image)
-    const fallback = document.createElement('div');
-    fallback.innerHTML = coverArt(v.id, v.name, 92);
+    img.onerror = function(){ this.style.display = 'none'; fallback.style.display = ''; };
+    img.onload  = function(){ fallback.style.display = 'none'; };
+    fallback.style.display = 'none';
 
     card.appendChild(img);
     card.appendChild(fallback);
