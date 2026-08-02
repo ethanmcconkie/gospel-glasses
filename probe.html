@@ -3,237 +3,258 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
-<meta name="description" content="Audio capability probe">
+<meta name="description" content="Multi-path audio survival probe">
 <meta name="mrbd-web-app-capable" content="yes">
-<title>Audio Probe</title>
+<title>Audio Paths</title>
 <style>
   :root { --gold:#D9B678; --ink:#F0EBE0; --dim:rgba(240,235,224,0.45); }
-  * { box-sizing: border-box; }
-  body {
-    width:600px; height:600px; margin:0; overflow:hidden;
-    background:#000; color:var(--ink);
-    font-family:'Noto Serif',Georgia,serif;
-    display:flex; flex-direction:column; padding:24px 30px;
-  }
-  h1 { font-size:17px; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 4px; font-weight:600; }
-  .sub { font-size:12px; color:var(--dim); margin-bottom:14px; }
-
-  .clock { font-size:44px; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1; }
-  .clocklbl { font-size:11px; color:var(--dim); margin-top:4px; margin-bottom:14px; }
-
-  .btn {
-    width:100%; padding:14px; border:none; border-radius:999px;
-    background:rgba(255,255,255,0.075); color:var(--ink);
-    font-family:inherit; font-size:15px; margin-bottom:14px;
-  }
-  .btn:focus { outline:none; background:rgba(255,255,255,0.16); box-shadow:0 0 0 1.5px rgba(240,235,224,0.5); }
-
-  .state { font-size:20px; letter-spacing:0.08em; padding:8px 0 12px; }
-  .state.on  { color:#8FCf9F; }
-  .state.off { color:#E08A7A; }
-  #log {
-    flex:1; overflow-y:auto; font-family:ui-monospace,Menlo,monospace;
-    font-size:11.5px; line-height:1.65;
-  }
-  .ok   { color:#8FCf9F; }
-  .bad  { color:#E08A7A; }
-  .info { color:var(--dim); }
-  .hit  { color:var(--gold); }
+  * { box-sizing:border-box; }
+  body { width:600px; height:600px; margin:0; overflow:hidden; background:#000; color:var(--ink);
+         font-family:'Noto Serif',Georgia,serif; display:flex; flex-direction:column; padding:20px 26px; }
+  h1 { font-size:15px; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 2px; }
+  .sub { font-size:11px; color:var(--dim); margin-bottom:10px; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px; }
+  .cell { border-radius:8px; background:rgba(255,255,255,0.06); padding:8px 6px; text-align:center; }
+  .cell b { display:block; font-size:10px; letter-spacing:0.06em; color:var(--dim); margin-bottom:4px; }
+  .cell span { font-size:15px; font-variant-numeric:tabular-nums; }
+  .cell.on span  { color:#8FCf9F; }
+  .cell.off span { color:#E08A7A; }
+  #verdict { font-size:19px; line-height:1.45; padding:14px 16px; border-radius:10px;
+             background:rgba(255,255,255,0.07); margin-bottom:10px; color:var(--dim); }
+  #verdict.done { background:rgba(217,182,120,0.13); color:var(--ink); box-shadow:0 0 0 1.5px rgba(217,182,120,0.5); }
+  #verdict b { color:#8FCf9F; }
+  #verdict i { color:#E08A7A; font-style:normal; }
+  #log { flex:1; overflow-y:auto; font-family:ui-monospace,Menlo,monospace; font-size:10.5px; line-height:1.6; }
+  .ok{color:#8FCf9F;} .bad{color:#E08A7A;} .info{color:var(--dim);} .hit{color:var(--gold);}
 </style>
 </head>
 <body>
 
-<h1>Audio Probe</h1>
-<div class="sub">Press Enter to start. Then let the display sleep.</div>
+<h1>Audio Paths</h1>
+<div class="sub">Let the display sleep, then wake it. Read the verdict.</div>
 
-<div class="clock" id="clock">0:00</div>
-<div class="clocklbl">audio position &middot; keeps counting only while audio runs</div>
-<div class="state" id="state">NOT PLAYING</div>
+<div id="verdict">waiting for a sleep/wake cycle&hellip;</div>
 
-<button class="btn" id="go" tabindex="0">Start tone &mdash; press anything</button>
+<div class="grid">
+  <div class="cell" id="cA"><b>A · audio</b><span>—</span></div>
+  <div class="cell" id="cB"><b>B · video</b><span>—</span></div>
+  <div class="cell" id="cC"><b>C · webaudio</b><span>—</span></div>
+  <div class="cell" id="cD"><b>D · stream</b><span>—</span></div>
+</div>
 
 <div id="log"></div>
 
 <script>
-var wl = null;
 var logEl = document.getElementById('log');
-function log(msg, cls){
+function log(m, c){
   var d = document.createElement('div');
-  d.className = cls || 'info';
-  var t = new Date().toLocaleTimeString();
-  d.textContent = '[' + t + '] ' + msg;
-  logEl.appendChild(d);
-  logEl.scrollTop = logEl.scrollHeight;
+  d.className = c || 'info';
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + m;
+  logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
 }
 
-/* ---------- Build a looping tone with no network ---------- */
-function makeToneWav(seconds, rate){
-  var n = seconds * rate;
-  var buf = new ArrayBuffer(44 + n * 2);
-  var v = new DataView(buf);
-  function str(o, s){ for (var i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); }
-  str(0,'RIFF'); v.setUint32(4, 36 + n*2, true); str(8,'WAVE');
+/* ---------- shared tone builder ---------- */
+function toneWav(seconds, rate, freq){
+  var n = seconds * rate, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
+  function str(o,s){ for (var i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); }
+  str(0,'RIFF'); v.setUint32(4,36+n*2,true); str(8,'WAVE');
   str(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
   v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
-  str(36,'data'); v.setUint32(40, n*2, true);
-
+  str(36,'data'); v.setUint32(40,n*2,true);
   for (var i=0;i<n;i++){
-    var t = i / rate;
-    // quiet drone plus a short pip every 2s so it is obvious by ear
-    var a = 0.06 * Math.sin(2*Math.PI*220*t);
-    var into = t % 2;
-    if (into < 0.12) a += 0.16 * Math.sin(2*Math.PI*660*t) * (1 - into/0.12);
-    v.setInt16(44 + i*2, Math.max(-1,Math.min(1,a)) * 32767, true);
+    var t = i/rate, a = 0.05*Math.sin(2*Math.PI*freq*t), into = t % 3;
+    if (into < 0.1) a += 0.14*Math.sin(2*Math.PI*(freq*3)*t)*(1-into/0.1);
+    v.setInt16(44+i*2, Math.max(-1,Math.min(1,a))*32767, true);
   }
-  return new Blob([buf], { type:'audio/wav' });
+  return URL.createObjectURL(new Blob([buf], {type:'audio/wav'}));
 }
 
-var audio = new Audio();
-audio.loop = false;
-audio.preload = 'auto';
-try {
-  var t0 = Date.now();
-  audio.src = URL.createObjectURL(makeToneWav(300, 8000));
-  log('tone built: 5:00 continuous, no loop (' + (Date.now()-t0) + 'ms)', 'ok');
-} catch (e) {
-  log('tone build FAILED: ' + e.message, 'bad');
+/* ---------- A · plain <audio> ---------- */
+var A = new Audio();
+A.loop = true;
+A.src = toneWav(20, 8000, 220);
+
+/* ---------- B · <video> with an audio-only track ---------- */
+/* Some runtimes apply a different background policy to video elements. */
+var B = document.createElement('video');
+B.loop = true; B.playsInline = true; B.muted = false;
+B.setAttribute('playsinline',''); B.setAttribute('webkit-playsinline','');
+B.style.cssText = 'position:absolute;width:2px;height:2px;opacity:0.01;pointer-events:none;';
+B.src = toneWav(20, 8000, 294);
+document.body.appendChild(B);
+
+/* ---------- C · Web Audio oscillator straight to destination ---------- */
+var AC = window.AudioContext || window.webkitAudioContext;
+var ctx = null, oscOn = false;
+function startC(){
+  if (!AC) { log('C: no AudioContext', 'bad'); return; }
+  if (!ctx) ctx = new AC();
+  ctx.resume();
+  if (oscOn) return;
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = 370; g.gain.value = 0.05;
+  o.connect(g); g.connect(ctx.destination); o.start();
+  oscOn = true;
+  log('C: oscillator started, ctx.state=' + ctx.state, 'ok');
 }
 
-/* ---------- Capability checks ---------- */
-log('--- capability ---');
-log('mediaSession present: ' + ('mediaSession' in navigator), ('mediaSession' in navigator) ? 'ok' : 'bad');
-log('MediaMetadata present: ' + (typeof window.MediaMetadata !== 'undefined'), (typeof window.MediaMetadata !== 'undefined') ? 'ok' : 'bad');
-log('wakeLock present: ' + ('wakeLock' in navigator), ('wakeLock' in navigator) ? 'ok' : 'info');
-log('AudioContext present: ' + !!(window.AudioContext || window.webkitAudioContext), 'info');
-
-if ('mediaSession' in navigator) {
+/* ---------- D · Web Audio -> MediaStream -> <audio srcObject> ---------- */
+/* MediaStream playback is sometimes treated like a call rather than media. */
+var D = new Audio(); D.autoplay = true;
+function startD(){
+  if (!AC) return;
+  if (!ctx) ctx = new AC();
+  ctx.resume();
   try {
-    if (typeof window.MediaMetadata !== 'undefined') {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Audio Probe', artist: 'Bookshelf', album: 'Capability test'
-      });
-      log('metadata set', 'ok');
-    }
-  } catch (e) { log('metadata FAILED: ' + e.message, 'bad'); }
-
-  ['play','pause','stop','seekbackward','seekforward','previoustrack','nexttrack'].forEach(function(act){
-    try {
-      navigator.mediaSession.setActionHandler(act, function(){
-        log('HANDLER FIRED: ' + act, 'hit');
-        if (act === 'play')  audio.play();
-        if (act === 'pause') audio.pause();
-      });
-      log('handler accepted: ' + act, 'ok');
-    } catch (e) {
-      log('handler rejected: ' + act, 'info');
-    }
-  });
+    var dest = ctx.createMediaStreamDestination();
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 494; g.gain.value = 0.05;
+    o.connect(g); g.connect(dest); o.start();
+    D.srcObject = dest.stream;
+    D.play().then(function(){ log('D: MediaStream playing', 'ok'); })
+            .catch(function(e){ log('D: rejected ' + e.name, 'bad'); });
+  } catch (e) { log('D: FAILED ' + e.message, 'bad'); }
 }
 
-/* ---------- Lifecycle: this is the actual screen-off evidence ---------- */
-document.addEventListener('visibilitychange', function(){
-  log('visibilitychange -> ' + document.visibilityState
-      + ' | paused=' + audio.paused
-      + ' | pos ' + audio.currentTime.toFixed(1) + 's', 'hit');
-  if (document.visibilityState === 'visible' && !wl && typeof requestWakeLock === 'function') {
-    requestWakeLock();
+/* ---------- capability ---------- */
+log('--- capability ---');
+log('wakeLock: ' + ('wakeLock' in navigator), 'info');
+log('AudioContext: ' + !!AC, 'info');
+log('createMediaStreamDestination: ' + !!(AC && AC.prototype.createMediaStreamDestination), 'info');
+
+var wl = null;
+function lock(){
+  if (!('wakeLock' in navigator)) { log('no wakeLock API', 'bad'); return; }
+  navigator.wakeLock.request('screen').then(function(l){
+    wl = l; log('wake lock ACQUIRED', 'ok');
+    l.addEventListener('release', function(){ wl = null; log('wake lock RELEASED', 'bad'); });
+  }).catch(function(e){ log('wake lock failed: ' + e.name, 'bad'); });
+}
+
+/* ---------- start everything ---------- */
+var started = false;
+function startAll(why){
+  if (started) return;
+  started = true;
+  log('starting all paths via ' + why, 'hit');
+  lock();
+  A.play().then(function(){ log('A: audio playing', 'ok'); })
+          .catch(function(e){ log('A: rejected ' + e.name, 'bad'); });
+  B.play().then(function(){ log('B: video playing', 'ok'); })
+          .catch(function(e){ log('B: rejected ' + e.name, 'bad'); });
+  startC();
+  startD();
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title:'Audio Paths', artist:'Bookshelf' });
+      navigator.mediaSession.playbackState = 'playing';
+    } catch(e){}
   }
+}
+
+['keydown','keyup','click','pointerdown','touchstart'].forEach(function(ev){
+  document.addEventListener(ev, function(e){
+    if (ev === 'keydown') log('key: ' + e.key + ' / ' + e.code);
+    startAll(ev);
+  });
 });
-window.addEventListener('pagehide', function(){ log('pagehide fired', 'hit'); });
-window.addEventListener('freeze',   function(){ log('freeze fired (page suspended)', 'bad'); });
-window.addEventListener('resume',   function(){ log('resume fired', 'hit'); });
-audio.addEventListener('pause',   function(){ log('audio PAUSED at ' + audio.currentTime.toFixed(1) + 's', 'bad'); });
-audio.addEventListener('playing', function(){ log('audio playing', 'ok'); });
+startAll('autoload');
 
-/* ---------- Position clock: proves whether audio kept running ---------- */
-var clock = document.getElementById('clock');
+/* ---------- readouts + heartbeat ---------- */
+function cell(id, alive, val){
+  var el = document.getElementById(id);
+  el.className = 'cell ' + (alive ? 'on' : 'off');
+  el.querySelector('span').textContent = val;
+}
+
 setInterval(function(){
-  var s = Math.floor(audio.currentTime);
-  clock.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
-}, 250);
+  cell('cA', !A.paused, A.currentTime.toFixed(0));
+  cell('cB', !B.paused, B.currentTime.toFixed(0));
+  cell('cC', !!(ctx && ctx.state === 'running'), ctx ? ctx.currentTime.toFixed(0) : '—');
+  cell('cD', !D.paused, ctx ? ctx.currentTime.toFixed(0) : '—');
+}, 300);
 
-/* Heartbeat: a timeline of what happened, not just the endpoint */
+/* The heartbeat is the key evidence: if these lines keep appearing with a
+   continuous t+ sequence, JS never stopped and only media was paused. If
+   there is a gap, the whole page was suspended. */
 var beat = 0;
 setInterval(function(){
-  beat++;
-  var vis = document.visibilityState;
-  var cls = audio.paused ? 'bad' : 'info';
-  log('t+' + (beat*5) + 's | pos ' + audio.currentTime.toFixed(1)
-      + 's | paused=' + audio.paused
-      + ' | ' + vis
-      + ' | wakelock=' + (wl ? 'held' : 'none'), cls);
+  beat += 5;
+  log('t+' + beat + 's | A=' + (A.paused?'off':'ON') + ' ' + A.currentTime.toFixed(0)
+      + ' | B=' + (B.paused?'off':'ON') + ' ' + B.currentTime.toFixed(0)
+      + ' | C=' + (ctx ? ctx.state : 'none')
+      + ' | D=' + (D.paused?'off':'ON')
+      + ' | ' + document.visibilityState
+      + ' | wl=' + (wl?'held':'no'),
+      (A.paused && B.paused && D.paused) ? 'bad' : 'info');
 }, 5000);
 
-audio.addEventListener('ended',   function(){ log('audio ENDED normally at 300s', 'ok'); });
-audio.addEventListener('stalled', function(){ log('audio stalled', 'bad'); });
-audio.addEventListener('suspend', function(){ log('audio suspend event', 'info'); });
-audio.addEventListener('waiting', function(){ log('audio waiting', 'info'); });
+/* ---------- Verdict: one line, readable at arm's length ---------- */
+var vEl = document.getElementById('verdict');
+var sleptAt = null, beatsAtSleep = 0, snapshot = null;
 
-/* ---------- Start ---------- */
-var go = document.getElementById('go');
-var stateEl = document.getElementById('state');
-var started = false;
-
-function setState(){
-  var on = !audio.paused;
-  stateEl.textContent = on ? 'PLAYING' : 'NOT PLAYING';
-  stateEl.className = 'state ' + (on ? 'on' : 'off');
+function nowState(){
+  return { A: !A.paused, B: !B.paused, C: !!(ctx && ctx.state === 'running'), D: !D.paused };
 }
-setInterval(setState, 300);
 
-function start(why){
-  if (started && !audio.paused) return;
-  log('play() attempt via ' + why);
-  var p = audio.play();
-  if (!p || !p.then){ log('play() returned no promise', 'info'); started = true; return; }
-  p.then(function(){
-    started = true;
-    log('play() RESOLVED', 'ok');
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-    go.textContent = 'Playing — now let the display sleep';
-    requestWakeLock();
-  }).catch(function(e){
-    log('play() REJECTED: ' + e.name + ' — ' + e.message, 'bad');
+function renderVerdict(){
+  var after = nowState();
+  var survived = [], died = [];
+  ['A','B','C','D'].forEach(function(k){
+    if (snapshot && snapshot[k]) (after[k] ? survived : died).push(k);
   });
+
+  var expectedBeats = Math.floor((Date.now() - sleptAt) / 5000);
+  var actualBeats = beat/5 - beatsAtSleep;
+  var jsRan = actualBeats >= expectedBeats * 0.6;
+
+  var names = { A:'audio', B:'video', C:'webaudio', D:'stream' };
+  var html = '';
+  html += survived.length
+    ? '<b>SURVIVED: ' + survived.map(function(k){ return names[k]; }).join(', ') + '</b>'
+    : '<i>ALL PATHS DIED</i>';
+  html += '<br>';
+  html += died.length ? '<i>died: ' + died.map(function(k){ return names[k]; }).join(', ') + '</i><br>' : '';
+  html += jsRan ? 'JS kept running (media policy)' : '<i>JS froze too (page suspended)</i>';
+  html += '<br>slept ' + Math.round((Date.now()-sleptAt)/1000) + 's';
+
+  vEl.innerHTML = html;
+  vEl.className = 'done';
+  log('VERDICT — survived: ' + (survived.join(',') || 'none')
+      + ' | jsRan=' + jsRan
+      + ' | beats ' + actualBeats + '/' + expectedBeats, 'hit');
 }
 
-/* Hold the display awake so we test suspension, not just timeout */
-function requestWakeLock(){
-  if (!('wakeLock' in navigator)) return;
-  navigator.wakeLock.request('screen').then(function(l){
-    wl = l;
-    log('wake lock ACQUIRED — display should stay lit', 'ok');
-    l.addEventListener('release', function(){ wl = null; log('wake lock RELEASED', 'bad'); });
-  }).catch(function(e){
-    log('wake lock failed: ' + e.name, 'bad');
-  });
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') {
+    sleptAt = Date.now();
+    beatsAtSleep = beat/5;
+    snapshot = nowState();
+    vEl.textContent = 'display asleep — wake it when ready';
+    vEl.className = '';
+  } else if (sleptAt) {
+    renderVerdict();
+  }
+  log('VISIBILITY -> ' + document.visibilityState
+      + ' | A=' + (A.paused?'off':'ON')
+      + ' | B=' + (B.paused?'off':'ON')
+      + ' | C=' + (ctx?ctx.state:'none')
+      + ' | D=' + (D.paused?'off':'ON'), 'hit');
+  if (document.visibilityState === 'visible' && !wl) lock();
+});
+window.addEventListener('freeze', function(){ log('FREEZE — page suspended', 'bad'); });
+window.addEventListener('resume', function(){ log('RESUME', 'hit'); });
+
+[['A',A],['B',B],['D',D]].forEach(function(p){
+  p[1].addEventListener('pause', function(){ log(p[0] + ': PAUSED at ' + p[1].currentTime.toFixed(1) + 's', 'bad'); });
+});
+if (AC) {
+  setInterval(function(){
+    if (ctx && ctx.state !== 'running' && oscOn) log('C: ctx.state = ' + ctx.state, 'bad');
+  }, 5000);
 }
 
-/* Start on literally anything */
-go.addEventListener('click', function(){ start('click'); });
-document.addEventListener('click',     function(){ start('doc click'); });
-document.addEventListener('keydown',   function(e){ log('keydown: ' + e.key + ' (code ' + e.code + ')'); start('key ' + e.key); });
-document.addEventListener('keyup',     function(e){ start('keyup'); });
-document.addEventListener('touchstart',function(){ start('touch'); });
-document.addEventListener('pointerdown',function(){ start('pointer'); });
-
-/* Try immediately in case autoplay is permitted at all */
-requestWakeLock();
-start('autoplay');
-
-/* And keep retrying for the first 20s in case the first attempt was too early */
-var tries = 0;
-var retry = setInterval(function(){
-  if (started || tries++ > 20){ clearInterval(retry); return; }
-  audio.play().then(function(){
-    started = true;
-    log('play() RESOLVED on retry ' + tries, 'ok');
-    requestWakeLock();
-  }).catch(function(){});
-}, 1000);
-
-go.focus();
-log('ready — press any button, or tap');
+log('ready — all four paths starting');
 </script>
 
 </body>
