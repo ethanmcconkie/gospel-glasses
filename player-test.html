@@ -92,7 +92,11 @@ var offset = 0;           // position in seconds when paused
 var nextToSchedule = 0;   // chunk index
 var scheduledUntil = 0;   // ctx time through which audio is scheduled
 
-var SCHEDULE_AHEAD = 2;   // keep this many chunks queued
+/* Background timers get throttled when the display sleeps, so we cannot
+   rely on setInterval to refill. Queue several minutes ahead, and refill
+   from onended callbacks which fire off the audio clock instead. */
+var SCHEDULE_AHEAD = 8;   // chunks queued ahead (~4 min at 30s)
+var pumping = false;      // guard: pump() is async, must not overlap
 
 function hms(s){
   s = Math.max(0, Math.floor(s));
@@ -135,7 +139,8 @@ async function getChunk(i){
   var buf = await ctx.decodeAudioData(bytes);
   buffers[i] = buf;
 
-  // Keep memory bounded: drop anything more than one chunk behind
+  // Keep memory bounded. Scheduled sources hold their own buffer reference,
+  // so dropping our cache entry does not affect queued audio.
   Object.keys(buffers).forEach(function(k){
     if (+k < i - 1) delete buffers[k];
   });
@@ -144,30 +149,46 @@ async function getChunk(i){
 
 /* ---------- scheduling ---------- */
 async function pump(){
-  if (!playing) return;
-  while (nextToSchedule < talk.chunks.length &&
-         scheduledUntil < ctx.currentTime + SCHEDULE_AHEAD * talk.chunkSeconds) {
-    var i = nextToSchedule;
-    var buf;
-    try { buf = await getChunk(i); }
-    catch (e) { log(e.message, 'bad'); return; }
-    if (!buf || !playing) return;
+  if (!playing || pumping) return;
+  pumping = true;
+  try {
+    while (nextToSchedule < talk.chunks.length &&
+           scheduledUntil < ctx.currentTime + SCHEDULE_AHEAD * talk.chunkSeconds) {
+      var i = nextToSchedule;
+      var buf;
+      try { buf = await getChunk(i); }
+      catch (e) { log('chunk ' + i + ': ' + e.message, 'bad'); return; }
+      if (!buf || !playing) return;
 
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(gain);
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(gain);
 
-    var when = Math.max(ctx.currentTime, scheduledUntil);
-    src.start(when);
-    sources.push(src);
+      var when = Math.max(ctx.currentTime, scheduledUntil);
+      src.start(when);
 
-    scheduledUntil = when + buf.duration;
-    nextToSchedule++;
+      // Refill from the audio clock, not a JS timer — this is what keeps
+      // playback alive while the display is asleep.
+      src.onended = function(){
+        var k = sources.indexOf(src);
+        if (k >= 0) sources.splice(k, 1);
+        if (playing) pump();
+      };
+
+      sources.push(src);
+      scheduledUntil = when + buf.duration;
+      nextToSchedule++;
+    }
+  } finally {
+    pumping = false;
   }
 }
 
 function stopSources(){
-  sources.forEach(function(s){ try { s.stop(); } catch(e){} });
+  sources.forEach(function(s){
+    s.onended = null;
+    try { s.stop(); } catch(e){}
+  });
   sources = [];
 }
 
@@ -192,6 +213,11 @@ async function play(){
     var src = ctx.createBufferSource();
     src.buffer = buf; src.connect(gain);
     src.start(ctx.currentTime, into);
+    src.onended = function(){
+      var k = sources.indexOf(src);
+      if (k >= 0) sources.splice(k, 1);
+      if (playing) pump();
+    };
     sources.push(src);
     scheduledUntil = ctx.currentTime + (buf.duration - into);
     nextToSchedule = startChunk + 1;
@@ -282,10 +308,14 @@ var beat = 0;
 setInterval(function(){
   if (!playing) return;
   beat += 10;
+  var lead = ctx ? (scheduledUntil - ctx.currentTime) : 0;
   log('t+' + beat + 's | pos ' + hms(position())
       + ' | ctx=' + (ctx ? ctx.state : 'none')
       + ' | queued=' + sources.length
-      + ' | ' + document.visibilityState, 'info');
+      + ' | buffered ' + Math.round(lead) + 's'
+      + ' | next ' + nextToSchedule + '/' + (talk ? talk.chunks.length : '?')
+      + ' | ' + document.visibilityState,
+      lead < 20 ? 'bad' : 'info');
 }, 10000);
 
 if ('mediaSession' in navigator) {
