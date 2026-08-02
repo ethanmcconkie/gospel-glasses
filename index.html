@@ -206,7 +206,76 @@ html, body {
 .bar i { display: block; height: 100%; border-radius: 2px; background: var(--gold);
          box-shadow: 0 0 8px rgba(201,168,76,0.55); }
 
-.home-recents-label { font-size: 12px; color: var(--ink-dim); margin: 24px 4px 10px; }
+.votd {
+  display: block; width: 100%; text-align: left;
+  background: var(--bubble); border: none;
+  border-radius: var(--r-card);
+  padding: 15px 18px;
+  font-family: inherit; color: inherit;
+  transition: background 220ms var(--ease), box-shadow 220ms var(--ease), transform 220ms var(--ease);
+}
+.votd:focus {
+  outline: none;
+  background: var(--bubble-hi);
+  box-shadow: 0 0 0 1.5px var(--ring), 0 0 26px var(--ring-glow);
+  transform: translateY(-2px);
+}
+.votd-txt {
+  font-family: var(--font-scripture);
+  font-size: 14px; line-height: 1.55;
+  color: var(--ink-mid);
+}
+.votd-ref {
+  font-family: var(--font-scripture);
+  font-size: 11px; letter-spacing: 0.06em;
+  color: #D9B678; margin-top: 9px; text-align: right;
+}
+
+.music-card {
+  display: flex; align-items: center; gap: 16px;
+  width: 100%; text-align: left;
+  padding: 14px 16px;
+  background: var(--bubble); border: none;
+  border-radius: var(--r-card);
+  font-family: inherit; color: inherit;
+  transition: background 220ms var(--ease), box-shadow 220ms var(--ease), transform 220ms var(--ease);
+}
+.music-card:focus {
+  outline: none;
+  background: var(--bubble-hi);
+  box-shadow: 0 0 0 1.5px var(--ring), 0 0 26px var(--ring-glow);
+  transform: translateY(-2px);
+}
+.music-cover {
+  width: 60px; height: 86px; flex-shrink: 0;
+  border-radius: var(--r-cover);
+  overflow: hidden; position: relative;
+  background: #000;
+}
+.music-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.music-kicker { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
+.music-title  { font-size: 16px; line-height: 1.2; }
+
+/* Home grew past one screen, so it scrolls. Padding + negative side margin
+   keeps focus glow from being clipped without shifting anything. */
+.home-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 26px 40px;
+  margin: 0 -26px;
+}
+.home-section-label {
+  font-size: 12px; color: var(--ink-dim);
+  margin: 20px 4px 10px;
+}
+.home-recents-label {
+  font-size: 12px; color: var(--ink-dim); margin: 24px 4px 10px;
+  background: none; border: none; padding: 0; font-family: inherit;
+  cursor: default; -webkit-tap-highlight-color: transparent;
+}
+.home-recents-label:focus {
+  outline: none; color: var(--ink-mid);
+}
 .recent-chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .rchip {
   display: flex; align-items: center; gap: 9px;
@@ -618,9 +687,18 @@ html, body {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>
       </button>
     </nav>
-    <div class="hero-card focusable" id="homeHero" tabindex="0"></div>
-    <div class="home-recents-label" id="homeRecentsLabel">Recents</div>
-    <div class="recent-chips" id="homeRecentChips"></div>
+    <div class="home-scroll">
+      <button class="votd focusable" id="homeVotd" tabindex="0"></button>
+
+      <div class="home-section-label">Continue reading</div>
+      <div class="hero-card focusable" id="homeHero" tabindex="0"></div>
+
+      <button class="home-recents-label focusable" id="homeRecentsLabel" tabindex="0">Recents</button>
+      <div class="recent-chips" id="homeRecentChips"></div>
+
+      <div class="home-section-label">Hymns</div>
+      <button class="music-card focusable" id="homeMusic" tabindex="0"></button>
+    </div>
   </section>
 
   <!-- LIBRARY -->
@@ -819,8 +897,52 @@ function wirePills(screenId){
     };
   });
 }
+
+/* Verse of the day. Fixed for now; swap for a rotation later. */
+const VOTD = { volumeId:'bom', bookId:'alma', chapterNum:13, verseIdx:3 };
+
+function renderVotd(){
+  const el = document.getElementById('homeVotd');
+  let text = '', ref = '';
+  try {
+    const ch = getChapter(VOTD.volumeId, VOTD.bookId, VOTD.chapterNum);
+    const book = getBook(VOTD.volumeId, VOTD.bookId);
+    text = verseText(ch.verses[VOTD.verseIdx]);
+    ref  = `${book.name} ${VOTD.chapterNum}:${VOTD.verseIdx + 1}`;
+  } catch(e) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  el.innerHTML = `<div class="votd-txt">${text}</div>`
+               + `<div class="votd-ref">${ref}</div>`;
+  el.onclick = ()=>{
+    nav = { volumeId:VOTD.volumeId, bookId:VOTD.bookId,
+            chapterNum:VOTD.chapterNum, verseIdx:VOTD.verseIdx };
+    openReader();
+  };
+}
+
+function renderMusic(){
+  const el = document.getElementById('homeMusic');
+  const vol = getVolume('hymns');
+  if(!vol || !vol.books.length){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML =
+      `<div class="music-cover">`
+    +   `<img src="covers/hymns.jpg" alt="Hymns" onerror="this.style.display='none'">`
+    + `</div>`
+    + `<div class="hero-info">`
+    +   `<div class="music-kicker">Music</div>`
+    +   `<div class="music-title">Hymns</div>`
+    + `</div>`;
+  el.onclick = ()=>{ nav.volumeId = 'hymns'; renderBooks(); showScreen('books'); };
+}
+
 function renderHome(){
   wirePills('home');
+  renderVotd();
+  renderMusic();
 
   const hero = document.getElementById('homeHero');
   const rec = recents();
@@ -851,6 +973,7 @@ function renderHome(){
 
   const chips = document.getElementById('homeRecentChips');
   const lbl = document.getElementById('homeRecentsLabel');
+  lbl.onclick = ()=>{ renderRecents(false); showScreen('recents'); };
   chips.innerHTML = '';
   const rest = rec.slice(1,4);
   lbl.style.display = rest.length ? '' : 'none';
