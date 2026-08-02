@@ -1024,7 +1024,7 @@ function renderLibrary(){
   wirePills('library');
   const grid = document.getElementById('volGrid');
   grid.innerHTML = '';
-  SCRIPTURES.volumes.forEach(v=>{
+  SCRIPTURES.volumes.filter(v => v.id !== 'hymns').forEach(v=>{
     const cover = VOL_COVERS[v.id] || { bg:'#0C0C10', fg:'#C9A84C' };
     const wrap = document.createElement('div');
     wrap.className = 'vol-wrap focusable' + (v.books.length===0?' empty':'');
