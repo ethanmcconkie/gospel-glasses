@@ -414,6 +414,49 @@ html, body {
 .vol-wrap:focus .vol-label { color: var(--ink-mid); }
 
 /* ───────────── CHAPTER CHIPS ───────────── */
+.hymn-search {
+  display: none;
+  align-items: center; gap: 9px;
+  width: 100%;
+  background: var(--bubble); border: none; border-radius: 999px;
+  padding: 11px 16px;
+  color: var(--ink-dim); font-family: inherit; font-size: 13px;
+  margin: 4px 0 0;
+  transition: background 200ms var(--ease), box-shadow 200ms var(--ease), color 200ms var(--ease);
+}
+.hymn-search.shown { display: flex; }
+.hymn-search:focus, .hymn-search.open {
+  outline: none;
+  background: var(--bubble-hi);
+  box-shadow: 0 0 0 1.5px var(--ring);
+  color: var(--ink);
+}
+.hymn-search .digits { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+
+.hymn-keypad { display: none; margin-top: 12px; }
+.hymn-keypad.open { display: block; }
+.hymn-preview {
+  font-family: var(--font-scripture);
+  font-size: 12px; color: #D9B678;
+  padding: 0 2px 12px; min-height: 1.4em;
+}
+.keypad-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.key {
+  height: 50px; border: none; border-radius: 12px;
+  background: var(--bubble); color: var(--ink);
+  font-size: 19px; font-family: inherit;
+  transition: background 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.key.alt { font-size: 13px; color: var(--ink-dim); }
+.key.go { color: #D9B678; }
+.key:focus {
+  outline: none;
+  background: var(--bubble-hi);
+  box-shadow: 0 0 0 1.5px var(--ring);
+}
+
 .chip-grid {
   flex: 1; overflow-y: auto;
   display: flex; flex-wrap: wrap; gap: 11px;
@@ -745,6 +788,30 @@ html, body {
       <span class="back-chev">‹</span><span id="chaptersBackLabel">Books</span>
     </button>
     <div class="screen-title" id="chaptersTitle">Chapters</div>
+
+    <button class="hymn-search focusable" id="hymnSearchBtn" tabindex="0">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <span id="hymnSearchLabel">Jump to hymn number&hellip;</span>
+    </button>
+
+    <div class="hymn-keypad" id="hymnKeypad">
+      <div class="hymn-preview" id="hymnPreview">&nbsp;</div>
+      <div class="keypad-grid">
+        <button class="key focusable" data-key="1" tabindex="0">1</button>
+        <button class="key focusable" data-key="2" tabindex="0">2</button>
+        <button class="key focusable" data-key="3" tabindex="0">3</button>
+        <button class="key focusable" data-key="4" tabindex="0">4</button>
+        <button class="key focusable" data-key="5" tabindex="0">5</button>
+        <button class="key focusable" data-key="6" tabindex="0">6</button>
+        <button class="key focusable" data-key="7" tabindex="0">7</button>
+        <button class="key focusable" data-key="8" tabindex="0">8</button>
+        <button class="key focusable" data-key="9" tabindex="0">9</button>
+        <button class="key alt focusable" data-key="back" tabindex="0">&larr;</button>
+        <button class="key focusable" data-key="0" tabindex="0">0</button>
+        <button class="key alt go focusable" data-key="go" tabindex="0">Go</button>
+      </div>
+    </div>
+
     <div class="chip-grid" id="chaptersGrid"></div>
   </section>
 
@@ -1105,11 +1172,74 @@ function renderBooks(){
   })));
 }
 
+/* ── Hymn jump-to-number ── */
+let hymnJumpDigits = '';
+
+function hymnJumpOpen(){
+  document.getElementById('hymnSearchBtn').classList.add('open');
+  document.getElementById('hymnKeypad').classList.add('open');
+  hymnJumpDigits = '';
+  hymnJumpRender();
+  document.querySelector('#hymnKeypad .key').focus();
+}
+function hymnJumpClose(){
+  document.getElementById('hymnSearchBtn').classList.remove('open');
+  document.getElementById('hymnKeypad').classList.remove('open');
+  document.getElementById('hymnSearchLabel').textContent = 'Jump to hymn number…';
+  document.getElementById('hymnSearchBtn').focus();
+}
+function hymnJumpRender(){
+  const label = document.getElementById('hymnSearchLabel');
+  const preview = document.getElementById('hymnPreview');
+  label.innerHTML = hymnJumpDigits
+    ? `<span class="digits">${hymnJumpDigits}</span>`
+    : 'Jump to hymn number…';
+
+  if(!hymnJumpDigits){ preview.innerHTML = '&nbsp;'; return; }
+  const num = parseInt(hymnJumpDigits, 10);
+  const book = getBook('hymns', getVolume('hymns').books[0].id);
+  const ch = book.chapters.find(c => c.num === num);
+  preview.textContent = ch ? `Hymn ${num} · ${ch.title}` : `No hymn ${num}`;
+}
+function hymnJumpKey(k){
+  if(k === 'back'){ hymnJumpDigits = hymnJumpDigits.slice(0,-1); hymnJumpRender(); return; }
+  if(k === 'go'){ hymnJumpGo(); return; }
+  if(hymnJumpDigits.length >= 3) return;
+  hymnJumpDigits += k;
+  hymnJumpRender();
+}
+function hymnJumpGo(){
+  const num = parseInt(hymnJumpDigits, 10);
+  if(!num) return;
+  const bookId = getVolume('hymns').books[0].id;
+  const book = getBook('hymns', bookId);
+  const ch = book.chapters.find(c => c.num === num);
+  if(!ch) return;
+  nav.volumeId = 'hymns'; nav.bookId = bookId;
+  nav.chapterNum = num; nav.verseIdx = 0;
+  openReader();
+}
+
+document.getElementById('hymnSearchBtn').addEventListener('click', hymnJumpOpen);
+document.querySelectorAll('#hymnKeypad .key').forEach(btn=>{
+  btn.addEventListener('click', ()=> hymnJumpKey(btn.dataset.key));
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && document.getElementById('hymnKeypad').classList.contains('open')){
+    hymnJumpClose(); e.preventDefault();
+  }
+});
+
 /* ── Chapters ── */
 function renderChapters(){
   const book = getBook(nav.volumeId, nav.bookId);
   document.getElementById('chaptersTitle').textContent = book.name;
   document.getElementById('chaptersBackLabel').textContent = getVolume(nav.volumeId).name;
+
+  const isHymnBook = nav.volumeId === 'hymns';
+  document.getElementById('hymnSearchBtn').classList.toggle('shown', isHymnBook);
+  if(!isHymnBook) hymnJumpClose();
+
   const grid = document.getElementById('chaptersGrid');
   grid.innerHTML = '';
   const hasTitles = book.chapters.some(c=>c.title);
