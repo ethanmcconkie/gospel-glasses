@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="Chunked Web Audio player test">
+<meta name="mrbd-web-app-capable" content="yes">
+<title>Player Test</title>
+<style>
+  :root { --gold:#D9B678; --ink:#F0EBE0; --dim:rgba(240,235,224,0.45); }
+  * { box-sizing:border-box; }
+  body { width:600px; height:600px; margin:0; overflow:hidden; background:#000; color:var(--ink);
+         font-family:'Noto Serif',Georgia,serif; display:flex; flex-direction:column;
+         align-items:center; padding:26px 40px; }
+
+  .spk { font-family:Palatino,Georgia,serif; font-size:11px; letter-spacing:0.12em;
+         text-transform:uppercase; color:var(--dim); }
+  .title { font-size:25px; text-align:center; margin-top:6px; line-height:1.25; }
+  .meta { font-size:12px; color:rgba(240,235,224,0.64); margin-top:6px; }
+
+  .barwrap { width:100%; margin-top:20px; }
+  .bar { height:3px; border-radius:999px; background:rgba(255,255,255,0.10); overflow:hidden; }
+  .bar i { display:block; height:100%; width:0%; background:var(--gold); }
+  .times { width:100%; display:flex; justify-content:space-between;
+           font-size:11px; color:var(--dim); margin-top:7px; }
+
+  .ctrls { display:flex; align-items:center; gap:14px; margin-top:18px; }
+  .btn { min-width:70px; height:44px; display:flex; align-items:center; justify-content:center;
+         border:none; border-radius:999px; background:rgba(255,255,255,0.065);
+         color:rgba(240,235,224,0.64); font-family:inherit; font-size:13px; }
+  .btn.big { min-width:84px; height:54px; font-size:16px; color:var(--ink); }
+  .btn:focus { outline:none; background:rgba(255,255,255,0.14);
+               box-shadow:0 0 0 1.5px rgba(240,235,224,0.45); }
+
+  .state { font-size:15px; margin-top:14px; letter-spacing:0.06em; }
+  .state.on  { color:#8FCf9F; }
+  .state.off { color:#E08A7A; }
+
+  #log { width:100%; flex:1; overflow-y:auto; margin-top:12px;
+         font-family:ui-monospace,Menlo,monospace; font-size:10.5px; line-height:1.6; }
+  .ok{color:#8FCf9F;} .bad{color:#E08A7A;} .info{color:var(--dim);} .hit{color:var(--gold);}
+</style>
+</head>
+<body>
+
+<div class="spk" id="spk">&nbsp;</div>
+<div class="title" id="title">Loading&hellip;</div>
+<div class="meta" id="meta">&nbsp;</div>
+
+<div class="barwrap">
+  <div class="bar"><i id="fill"></i></div>
+  <div class="times"><span id="tnow">0:00</span><span id="tend">0:00</span></div>
+</div>
+
+<div class="ctrls">
+  <button class="btn" id="back">&lsaquo;&lsaquo; 15</button>
+  <button class="btn big" id="play">&#9654;</button>
+  <button class="btn" id="fwd">30 &rsaquo;&rsaquo;</button>
+</div>
+
+<div class="state off" id="state">STOPPED</div>
+
+<div id="log"></div>
+
+<script>
+/* ------------------------------------------------------------------
+   Chunked Web Audio player.
+
+   Media elements are paused when the display sleeps; Web Audio is not.
+   So we decode short chunks ourselves and schedule them back to back on
+   the AudioContext clock. Memory stays bounded because we only ever hold
+   the playing chunk and the next one.
+   ------------------------------------------------------------------ */
+
+var logEl = document.getElementById('log');
+function log(m, c){
+  var d = document.createElement('div');
+  d.className = c || 'info';
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + m;
+  logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+}
+
+var AC = window.AudioContext || window.webkitAudioContext;
+var ctx = null, gain = null;
+
+var talk = null;          // manifest entry
+var buffers = {};         // index -> AudioBuffer (only a couple kept)
+var sources = [];         // scheduled AudioBufferSourceNodes
+var playing = false;
+var startedAt = 0;        // ctx.currentTime when playback position 0 would have begun
+var offset = 0;           // position in seconds when paused
+var nextToSchedule = 0;   // chunk index
+var scheduledUntil = 0;   // ctx time through which audio is scheduled
+
+var SCHEDULE_AHEAD = 2;   // keep this many chunks queued
+
+function hms(s){
+  s = Math.max(0, Math.floor(s));
+  var m = Math.floor(s/60);
+  return m + ':' + String(s%60).padStart(2,'0');
+}
+
+function position(){
+  if (!ctx) return offset;
+  return playing ? Math.min(talk.duration, ctx.currentTime - startedAt) : offset;
+}
+
+/* ---------- loading ---------- */
+async function loadManifest(){
+  try {
+    var res = await fetch('data/talks.json', { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    if (!data.talks || !data.talks.length) throw new Error('no talks in manifest');
+    talk = data.talks[0];
+    document.getElementById('spk').textContent = talk.speaker || '';
+    document.getElementById('title').textContent = talk.title;
+    document.getElementById('meta').textContent =
+      (talk.date ? talk.date + ' \u00b7 ' : '') + talk.durationLabel;
+    document.getElementById('tend').textContent = hms(talk.duration);
+    log('manifest ok: ' + talk.chunks.length + ' chunks, ' + talk.durationLabel, 'ok');
+    restore();
+  } catch (e) {
+    document.getElementById('title').textContent = 'No talks.json';
+    log('manifest FAILED: ' + e.message, 'bad');
+  }
+}
+
+async function getChunk(i){
+  if (buffers[i]) return buffers[i];
+  if (i < 0 || i >= talk.chunks.length) return null;
+  var res = await fetch(talk.chunks[i]);
+  if (!res.ok) throw new Error('chunk ' + i + ' HTTP ' + res.status);
+  var bytes = await res.arrayBuffer();
+  var buf = await ctx.decodeAudioData(bytes);
+  buffers[i] = buf;
+
+  // Keep memory bounded: drop anything more than one chunk behind
+  Object.keys(buffers).forEach(function(k){
+    if (+k < i - 1) delete buffers[k];
+  });
+  return buf;
+}
+
+/* ---------- scheduling ---------- */
+async function pump(){
+  if (!playing) return;
+  while (nextToSchedule < talk.chunks.length &&
+         scheduledUntil < ctx.currentTime + SCHEDULE_AHEAD * talk.chunkSeconds) {
+    var i = nextToSchedule;
+    var buf;
+    try { buf = await getChunk(i); }
+    catch (e) { log(e.message, 'bad'); return; }
+    if (!buf || !playing) return;
+
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(gain);
+
+    var when = Math.max(ctx.currentTime, scheduledUntil);
+    src.start(when);
+    sources.push(src);
+
+    scheduledUntil = when + buf.duration;
+    nextToSchedule++;
+  }
+}
+
+function stopSources(){
+  sources.forEach(function(s){ try { s.stop(); } catch(e){} });
+  sources = [];
+}
+
+/* ---------- transport ---------- */
+async function play(){
+  if (!talk) return;
+  if (!ctx){ ctx = new AC(); gain = ctx.createGain(); gain.connect(ctx.destination); }
+  await ctx.resume();
+
+  playing = true;
+  var startChunk = Math.floor(offset / talk.chunkSeconds);
+  var into = offset - startChunk * talk.chunkSeconds;
+
+  nextToSchedule = startChunk;
+  scheduledUntil = 0;
+  startedAt = ctx.currentTime - offset;
+
+  // First chunk starts mid-way if we are resuming
+  try {
+    var buf = await getChunk(startChunk);
+    if (!buf) { playing = false; return; }
+    var src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(gain);
+    src.start(ctx.currentTime, into);
+    sources.push(src);
+    scheduledUntil = ctx.currentTime + (buf.duration - into);
+    nextToSchedule = startChunk + 1;
+    log('playing from ' + hms(offset) + ' (chunk ' + startChunk + ')', 'ok');
+  } catch (e) {
+    log('start FAILED: ' + e.message, 'bad');
+    playing = false;
+    return;
+  }
+
+  document.getElementById('play').innerHTML = '&#10074;&#10074;';
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+  pump();
+}
+
+function pause(){
+  if (!playing) return;
+  offset = position();
+  playing = false;
+  stopSources();
+  document.getElementById('play').innerHTML = '&#9654;';
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  save();
+  log('paused at ' + hms(offset));
+}
+
+function toggle(){ playing ? pause() : play(); }
+
+async function seek(delta){
+  var target = Math.max(0, Math.min(talk.duration - 1, position() + delta));
+  var wasPlaying = playing;
+  if (playing){ playing = false; stopSources(); }
+  offset = target;
+  buffers = {};
+  if (wasPlaying) await play(); else save();
+  log('seek -> ' + hms(target));
+}
+
+/* ---------- persistence ---------- */
+function save(){
+  try { localStorage.setItem('talkpos:' + talk.id, String(offset)); } catch(e){}
+}
+function restore(){
+  try {
+    var v = localStorage.getItem('talkpos:' + talk.id);
+    if (v){ offset = parseFloat(v) || 0; log('resuming at ' + hms(offset)); }
+  } catch(e){}
+}
+
+/* ---------- UI ---------- */
+var fill = document.getElementById('fill');
+var tnow = document.getElementById('tnow');
+var stateEl = document.getElementById('state');
+
+setInterval(function(){
+  var p = position();
+  tnow.textContent = hms(p);
+  fill.style.width = talk ? (p / talk.duration * 100) + '%' : '0%';
+  stateEl.textContent = playing ? 'PLAYING' : 'STOPPED';
+  stateEl.className = 'state ' + (playing ? 'on' : 'off');
+  if (playing && p >= talk.duration - 0.2){ pause(); offset = 0; save(); }
+}, 250);
+
+setInterval(function(){ if (playing) { pump(); save(); } }, 1000);
+
+document.getElementById('play').addEventListener('click', toggle);
+document.getElementById('back').addEventListener('click', function(){ seek(-15); });
+document.getElementById('fwd').addEventListener('click',  function(){ seek(30); });
+
+var focusables = [document.getElementById('back'),
+                  document.getElementById('play'),
+                  document.getElementById('fwd')];
+var fi = 1;
+focusables[fi].focus();
+
+document.addEventListener('keydown', function(e){
+  if (e.key === 'ArrowLeft'){ fi = Math.max(0, fi-1); focusables[fi].focus(); e.preventDefault(); }
+  else if (e.key === 'ArrowRight'){ fi = Math.min(focusables.length-1, fi+1); focusables[fi].focus(); e.preventDefault(); }
+  else if (e.key === 'Enter'){ focusables[fi].click(); e.preventDefault(); }
+});
+
+/* ---------- evidence ---------- */
+document.addEventListener('visibilitychange', function(){
+  log('VISIBILITY -> ' + document.visibilityState
+      + ' | playing=' + playing + ' | pos ' + hms(position()), 'hit');
+});
+var beat = 0;
+setInterval(function(){
+  if (!playing) return;
+  beat += 10;
+  log('t+' + beat + 's | pos ' + hms(position())
+      + ' | ctx=' + (ctx ? ctx.state : 'none')
+      + ' | queued=' + sources.length
+      + ' | ' + document.visibilityState, 'info');
+}, 10000);
+
+if ('mediaSession' in navigator) {
+  try {
+    navigator.mediaSession.setActionHandler('play', play);
+    navigator.mediaSession.setActionHandler('pause', pause);
+    navigator.mediaSession.setActionHandler('seekbackward', function(){ seek(-15); });
+    navigator.mediaSession.setActionHandler('seekforward', function(){ seek(30); });
+  } catch(e){}
+}
+
+loadManifest();
+</script>
+
+</body>
+</html>
