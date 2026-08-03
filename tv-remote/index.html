@@ -72,7 +72,7 @@
 <script>
 (() => {
   "use strict";
-  const API = "https://YOUR-PROXY-HOST";
+  const API = "https://lexmark-res-essential-arm.trycloudflare.com";
   const POLL = 15000;
 
   const frag = new URLSearchParams(location.hash.slice(1));
@@ -82,12 +82,10 @@
   }
   const KEY = localStorage.getItem("tv.key");
 
-  const HARDCODED_TV = { id: "ad2d0af8-f587-4c17-887b-fc62dd8986f4", name: "Roman" };
-
-  let view = "remote";
-  let tvs = [HARDCODED_TV];
+  let view = "picker";        // picker | remote
+  let tvs = JSON.parse(localStorage.getItem("tv.list") || "[]");
   let sel = 0;
-  let activeTV = HARDCODED_TV;
+  let activeTV = null;
   let statusData = { power: null, volume: null, muted: false };
   let gridSel = 0;            // index into REMOTE_BUTTONS
   let timer = null;

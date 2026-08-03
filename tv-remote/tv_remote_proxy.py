@@ -21,7 +21,7 @@ the actual SmartThings command shape.
 
 import os
 import time
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException
@@ -57,7 +57,7 @@ ACTIONS = {
 }
 
 
-def auth(header: str | None):
+def auth(header: Optional[str]):
     if header != f"Bearer {GLASS_KEY}":
         raise HTTPException(401, "bad key")
 
@@ -71,7 +71,7 @@ def cached(key: str, ttl: int, producer):
     return val
 
 
-async def st_request(method: str, path: str, json: dict | None = None) -> dict:
+async def st_request(method: str, path: str, json: Optional[dict] = None) -> dict:
     async with httpx.AsyncClient() as client:
         r = await client.request(
             method,
@@ -86,7 +86,7 @@ async def st_request(method: str, path: str, json: dict | None = None) -> dict:
 
 
 @app.get("/tv/devices")
-async def list_devices(authorization: str | None = Header(None)):
+async def list_devices(authorization: Optional[str] = Header(None)):
     """TVs only, so the picker isn't cluttered with lightbulbs and sensors."""
     auth(authorization)
 
@@ -107,7 +107,7 @@ async def list_devices(authorization: str | None = Header(None)):
 
 
 @app.get("/tv/status/{device_id}")
-async def status(device_id: str, authorization: str | None = Header(None)):
+async def status(device_id: str, authorization: Optional[str] = Header(None)):
     """Power + volume + mute, enough for the remote screen to show real state."""
     auth(authorization)
     data = await st_request("GET", f"/devices/{device_id}/status")
@@ -121,7 +121,7 @@ async def status(device_id: str, authorization: str | None = Header(None)):
 
 @app.post("/tv/command/{device_id}/{action}")
 async def command(
-    device_id: str, action: str, authorization: str | None = Header(None)
+    device_id: str, action: str, authorization: Optional[str] = Header(None)
 ):
     auth(authorization)
     if action not in ACTIONS:
