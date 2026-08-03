@@ -82,10 +82,12 @@
   }
   const KEY = localStorage.getItem("tv.key");
 
-  let view = "picker";        // picker | remote
-  let tvs = JSON.parse(localStorage.getItem("tv.list") || "[]");
+  const HARDCODED_TV = { id: "ad2d0af8-f587-4c17-887b-fc62dd8986f4", name: "Roman" };
+
+  let view = "remote";
+  let tvs = [HARDCODED_TV];
   let sel = 0;
-  let activeTV = null;
+  let activeTV = HARDCODED_TV;
   let statusData = { power: null, volume: null, muted: false };
   let gridSel = 0;            // index into REMOTE_BUTTONS
   let timer = null;
