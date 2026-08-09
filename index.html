@@ -1517,6 +1517,11 @@ function moveInGrid(gridItems, allItems, dir){
     if(rowIdx < rows.length-1){
       const nr = rows[rowIdx+1];
       target = nr[Math.min(colIdx, nr.length-1)];
+    } else {
+      // Bottom of sub-grid (e.g. recent chips) — exit to next item after the grid
+      const lastGridItem = gridItems[gridItems.length-1];
+      const lastIdx = allItems.indexOf(lastGridItem);
+      if(lastIdx < allItems.length-1) target = allItems[lastIdx+1];
     }
   }
 
