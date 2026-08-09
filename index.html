@@ -1538,7 +1538,7 @@ function moveFocus(dir){
 
   /* Check if in a 2D grid context */
   const volGrid    = cur.closest('.vol-grid');
-  const chipGrid   = cur.closest('.chip-grid:not(.list-mode)') || cur.closest('.recent-chips');
+  const chipGrid   = cur.closest('.chip-grid:not(.list-mode)');
   const keypadGrid = cur.closest('.keypad-grid');
   const pillScreen = (!volGrid && !chipGrid && !keypadGrid && scope.querySelector && scope.querySelector('.pill-bar')) ? scope : null;
   const gridHost = volGrid || chipGrid || keypadGrid || pillScreen;
