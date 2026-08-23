@@ -1553,13 +1553,13 @@ function moveFocus(dir){
     }
     if(dir === 'up'){
       const lbl = document.getElementById('homeRecentsLabel');
-      if(lbl){ lbl.focus(); return; }
+      if(lbl && getComputedStyle(lbl).display !== 'none'){ lbl.focus(); return; }
     }
   }
 
   /* Check if in a 2D grid context */
   const volGrid    = cur.closest('.vol-grid');
-  const chipGrid   = cur.closest('.chip-grid:not(.list-mode)');
+  const chipGrid   = cur.closest('.chip-grid:not(.list-mode), .recent-chips');
   const keypadGrid = cur.closest('.keypad-grid');
   const pillScreen = (!volGrid && !chipGrid && !keypadGrid && scope.querySelector && scope.querySelector('.pill-bar')) ? scope : null;
   const gridHost = volGrid || chipGrid || keypadGrid || pillScreen;
@@ -1636,7 +1636,7 @@ function dragScroll(container){
   container.addEventListener('pointerup', end);
   container.addEventListener('pointercancel', end);
 }
-['volGrid','booksList','chaptersGrid'].forEach(id=>{
+['volGrid','booksList','chaptersGrid','recentsList','bookmarksList','chapterScroll'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) dragScroll(el);
 });
