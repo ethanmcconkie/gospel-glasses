@@ -1542,6 +1542,21 @@ function moveFocus(dir){
 
   const cur = document.activeElement;
 
+  /* Recent chips: Y-based grid is unreliable when home-scroll is scrolled
+     (scrolled items overlap in Y with the pill bar, collapsing rows).
+     Handle UP/DOWN explicitly; LEFT/RIGHT still fall through to grid. */
+  const homeChipContainer = document.getElementById('homeRecentChips');
+  if(homeChipContainer && homeChipContainer.contains(cur)){
+    if(dir === 'down'){
+      const m = document.getElementById('homeMusic');
+      if(m && getComputedStyle(m).display !== 'none'){ m.focus(); return; }
+    }
+    if(dir === 'up'){
+      const lbl = document.getElementById('homeRecentsLabel');
+      if(lbl){ lbl.focus(); return; }
+    }
+  }
+
   /* Check if in a 2D grid context */
   const volGrid    = cur.closest('.vol-grid');
   const chipGrid   = cur.closest('.chip-grid:not(.list-mode)');
