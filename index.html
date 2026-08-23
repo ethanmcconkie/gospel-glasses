@@ -54,6 +54,12 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
+  /* Opts into the EMG pinch-and-hold+arm-movement drag gesture
+     (v127 Web Apps gesture spec). Must be in the initial stylesheet --
+     touch-action is read on <body> once at page load; per-element or
+     post-load JS changes are not honored. Doesn't affect D-pad/pinch,
+     which keep working exactly as before -- see dragScroll() below. */
+  touch-action: none;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -1585,6 +1591,39 @@ document.addEventListener('keydown', e=>{
     default: return;
   }
   e.preventDefault();
+});
+
+/* ── Pinch-hold + arm-movement drag scrolling ──
+   v127 Web Apps gesture spec: pinch + hold + arm movement delivers
+   pointerdown/pointermove/pointerup. Positional only -- scrolls the
+   list, doesn't select anything. Selecting an item still happens via
+   a normal quick pinch (Enter -> .click()), same as today. Wired to
+   the three long lists: volume grid, book list, chapter grid -- all
+   already overflow-y:auto, so this just adds a faster way to get
+   through them. D-pad + pinch navigation is completely untouched;
+   this never touches moveFocus() or the keydown handler above. */
+function dragScroll(container){
+  let dragging=false, startY=0, startTop=0;
+  container.addEventListener('pointerdown', e=>{
+    dragging=true; startY=e.clientY; startTop=container.scrollTop;
+    try{ container.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  container.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    // Compute our own delta from clientY rather than trusting
+    // movementY -- Meta's docs flag drag field values as
+    // device-specific and recommend testing on real hardware.
+    const dy = e.clientY - startY;
+    const max = container.scrollHeight - container.clientHeight;
+    container.scrollTop = Math.max(0, Math.min(max, startTop - dy));
+  });
+  const end = ()=>{ dragging=false; };
+  container.addEventListener('pointerup', end);
+  container.addEventListener('pointercancel', end);
+}
+['volGrid','booksList','chaptersGrid'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) dragScroll(el);
 });
 
 /* ── Init ── */
