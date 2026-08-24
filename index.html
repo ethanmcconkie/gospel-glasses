@@ -1620,19 +1620,30 @@ document.addEventListener('keydown', e=>{
    through them. D-pad + pinch navigation is completely untouched;
    this never touches moveFocus() or the keydown handler above. */
 function dragScroll(container){
-  let active=false, startY=0, startTop=0;
+  let active=false, dragged=false, startY=0, startTop=0;
   container.addEventListener('pointerdown', e=>{
-    active=true; startY=e.clientY; startTop=container.scrollTop;
+    active=true; dragged=false; startY=e.clientY; startTop=container.scrollTop;
   });
   container.addEventListener('pointermove', e=>{
     if(!active) return;
     const dy = e.clientY - startY;
+    if(Math.abs(dy) >= 6) dragged=true;
+    if(!dragged) return;
     const max = container.scrollHeight - container.clientHeight;
     container.scrollTop = Math.max(0, Math.min(max, startTop - dy));
   });
-  const end = ()=>{ active=false; };
-  container.addEventListener('pointerup', end);
-  container.addEventListener('pointercancel', end);
+  container.addEventListener('pointerup', e=>{
+    if(!active) return;
+    const wasDrag = dragged;
+    active=false; dragged=false;
+    /* touch-action:none suppresses synthetic click on non-mouse platforms
+       (glasses). Fire it manually on a short tap so pinch-select works. */
+    if(!wasDrag && e.pointerType !== 'mouse'){
+      const t = e.target.closest('.focusable');
+      if(t){ t.focus(); t.click(); }
+    }
+  });
+  container.addEventListener('pointercancel', ()=>{ active=false; dragged=false; });
 }
 ['volGrid','booksList','chaptersGrid','recentsList','bookmarksList','chapterScroll'].forEach(id=>{
   const el = document.getElementById(id);
