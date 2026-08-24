@@ -1618,26 +1618,17 @@ document.addEventListener('keydown', e=>{
    through them. D-pad + pinch navigation is completely untouched;
    this never touches moveFocus() or the keydown handler above. */
 function dragScroll(container){
-  let dragging=false, startY=0, startTop=0, capturedId=null;
+  let active=false, startY=0, startTop=0;
   container.addEventListener('pointerdown', e=>{
-    startY=e.clientY; startTop=container.scrollTop; capturedId=e.pointerId;
+    active=true; startY=e.clientY; startTop=container.scrollTop;
   });
   container.addEventListener('pointermove', e=>{
-    if(capturedId === null || e.pointerId !== capturedId) return;
-    if(!dragging){
-      // Only commit to a drag after 5px movement so quick pinch-selects
-      // are never captured — setPointerCapture on pointerdown redirects
-      // pointerup to the container, which prevents click from firing on
-      // child buttons.
-      if(Math.abs(e.clientY - startY) < 5) return;
-      dragging=true;
-      try{ container.setPointerCapture(e.pointerId); }catch(err){}
-    }
+    if(!active) return;
     const dy = e.clientY - startY;
     const max = container.scrollHeight - container.clientHeight;
     container.scrollTop = Math.max(0, Math.min(max, startTop - dy));
   });
-  const end = ()=>{ dragging=false; capturedId=null; };
+  const end = ()=>{ active=false; };
   container.addEventListener('pointerup', end);
   container.addEventListener('pointercancel', end);
 }
