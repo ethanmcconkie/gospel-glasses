@@ -54,14 +54,6 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
-  /* Opts into the EMG pinch-and-hold+arm-movement drag gesture
-     (v127 Web Apps gesture spec). Must be in the initial stylesheet --
-     touch-action is read on <body> once at page load; per-element or
-     post-load JS changes are not honored. Doesn't affect D-pad/pinch,
-     which keep working exactly as before -- see dragScroll() below. */
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -1608,46 +1600,6 @@ document.addEventListener('keydown', e=>{
     default: return;
   }
   e.preventDefault();
-});
-
-/* ── Pinch-hold + arm-movement drag scrolling ──
-   v127 Web Apps gesture spec: pinch + hold + arm movement delivers
-   pointerdown/pointermove/pointerup. Positional only -- scrolls the
-   list, doesn't select anything. Selecting an item still happens via
-   a normal quick pinch (Enter -> .click()), same as today. Wired to
-   the three long lists: volume grid, book list, chapter grid -- all
-   already overflow-y:auto, so this just adds a faster way to get
-   through them. D-pad + pinch navigation is completely untouched;
-   this never touches moveFocus() or the keydown handler above. */
-function dragScroll(container){
-  let active=false, dragged=false, startY=0, startTop=0;
-  container.addEventListener('pointerdown', e=>{
-    active=true; dragged=false; startY=e.clientY; startTop=container.scrollTop;
-  });
-  container.addEventListener('pointermove', e=>{
-    if(!active) return;
-    const dy = e.clientY - startY;
-    if(Math.abs(dy) >= 6) dragged=true;
-    if(!dragged) return;
-    const max = container.scrollHeight - container.clientHeight;
-    container.scrollTop = Math.max(0, Math.min(max, startTop - dy));
-  });
-  container.addEventListener('pointerup', e=>{
-    if(!active) return;
-    const wasDrag = dragged;
-    active=false; dragged=false;
-    /* touch-action:none suppresses synthetic click on non-mouse platforms
-       (glasses). Fire it manually on a short tap so pinch-select works. */
-    if(!wasDrag && e.pointerType !== 'mouse'){
-      const t = e.target.closest('.focusable');
-      if(t){ t.focus(); t.click(); }
-    }
-  });
-  container.addEventListener('pointercancel', ()=>{ active=false; dragged=false; });
-}
-['volGrid','booksList','chaptersGrid','recentsList','bookmarksList','chapterScroll'].forEach(id=>{
-  const el = document.getElementById(id);
-  if(el) dragScroll(el);
 });
 
 /* ── Init ── */
